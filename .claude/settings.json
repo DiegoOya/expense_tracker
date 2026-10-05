@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/pytest *)",
+      "Bash(.venv/bin/pytest)",
+      "Bash(.venv/bin/ruff *)",
+      "Bash(.venv/bin/mypy *)",
+      "Bash(.venv/bin/mypy)",
+      "Bash(.venv/bin/python scripts/check_specs.py)",
+      "Bash(git status *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git diff)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Edit(./src/**)",
+      "Edit(./tests/**)",
+      "Edit(./specs/**)",
+      "Edit(./docs/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(./secrets/**)",
+      "Bash(git push *)",
+      "Bash(git push)",
+      "Bash(rm -rf *)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/block_secrets.py"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/format_python.py"],
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_checks.py"],
+            "timeout": 300,
+            "statusMessage": "Running tests and spec check"
+          }
+        ]
+      }
+    ]
+  }
+}

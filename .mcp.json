@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "expense-tracker": {
+      "type": "stdio",
+      "command": ".venv/bin/expense-tracker-mcp",
+      "args": [],
+      "env": {
+        "EXPENSE_TRACKER_DB": "${EXPENSE_TRACKER_DB:-data/expenses.db}"
+      }
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PAT}"
+      }
+    }
+  }
+}

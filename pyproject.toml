@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "expense-tracker"
+version = "0.1.0"
+description = "Small personal expense tracker exposed as an MCP server, built with an agent-driven SDD workflow."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=2.3,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9,<10",
+    "ruff>=0.16,<0.17",
+    "mypy>=2,<3",
+]
+
+[project.scripts]
+expense-tracker-mcp = "expense_tracker.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# PEP 8: 79-char code lines, 72-char docstrings/comments, PEP 8 naming.
+# Whitespace/blank-line layout (pycodestyle E1/E2/E3) is enforced by
+# `ruff format` (checked in CI with --check); those lint rules are still
+# preview-only in ruff, so they are not selected here.
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "N", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 79
+max-doc-length = 72
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "scripts", ".claude/hooks"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "spec(ac_id): links a test to an acceptance criterion, e.g. AC-ADD-01",
+]
