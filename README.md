@@ -130,6 +130,28 @@ why, and what changed.
    `Read(./.env)` deny rule. Both layers stay (ADR 4), but the order
    matters when reading logs.
 
+7. **The first spec draft was "happy" about edge cases.** The
+   agent's draft of `add-expense` had 17 criteria and looked
+   complete. The `spec-reviewer` subagent, reading it cold, found 10
+   major gaps a test writer would have had to guess about: a JSON
+   number like 19.99 becomes a float that `Decimal()` turns into
+   19.98999..., `"NaN"` crashes the comparison, `"1e30"` overflows the
+   INTEGER column and reaches the client as an opaque error, plus
+   undefined trimming, blank optionals, validation order and a
+   non-strict date format (`20261001` passes `fromisoformat`). The
+   same model that wrote the spec missed all of it; a separate
+   context caught it. Business decisions (future dates, max amount,
+   comma separator) went to the developer, not to the agent.
+8. **Then the reviewer over-split.** Its second pass asked to split
+   criteria by code path (`null` vs `""` vs missing), which took the
+   spec to 34 criteria. The developer pushed back: many had the same
+   outcome. Rule now in `write-spec` and `spec-reviewer`: one
+   criterion per observable outcome, listing every example value,
+   and tests must cover all values (the reviewer checks that, since
+   `check_specs.py` only counts one test per criterion). Result: 23
+   criteria. Lesson: a reviewer agent optimises for what its prompt
+   rewards; "one behaviour" was read as "one code path".
+
 ### Manual hook verification (phase 2)
 
 Done live in a Claude Code session on this repo, besides

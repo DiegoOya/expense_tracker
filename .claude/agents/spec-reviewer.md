@@ -22,7 +22,10 @@ You will be told either a spec path (spec review) or a feature slug
 
 For each acceptance criterion in `specs/<slug>/spec.md`:
 - Is it observable from outside (MCP client or public function)?
-- Does it describe exactly one behaviour with concrete values?
+- Does it describe exactly one observable outcome with concrete
+  values? Several inputs with the same outcome belong in one
+  criterion; do not ask to split them by code path. Do flag two
+  criteria with the same outcome that should be merged.
 - Can it be tested offline and deterministically?
 - Are failure cases (invalid input, empty data) covered?
 Also flag contradictions between criteria and with "Out of scope".
@@ -34,6 +37,9 @@ Also flag contradictions between criteria and with "Out of scope".
 2. For each criterion, open the tests linked with
    `@pytest.mark.spec("<ID>")` and judge whether they actually prove
    the criterion (right assertion, right values), not just mention it.
+   When a criterion lists several example values, every value must be
+   exercised (usually via `pytest.mark.parametrize`);
+   `check_specs.py` cannot check this, so you must.
 3. Look for behaviour in `src/` that no criterion asks for (scope
    creep) and criteria with no implementation.
 4. Domain rule: `src/expense_tracker/domain/` imports only the

@@ -19,7 +19,11 @@ Feature: $ARGUMENTS
    - **Observable**: says what the MCP client or caller sees (return
      value, error message, stored state as seen through another tool),
      never how it is implemented.
-   - **One behaviour**: one "then". Split otherwise.
+   - **One outcome**: one "then". Different results (another error
+     message, another returned value) are separate criteria. The same
+     result for several inputs is ONE criterion listing every example
+     value; its tests must cover all of them. Do not split by code
+     path: that is a testing concern, not a requirement.
    - **Concrete**: uses example values (`amount "12.50"`), not "a valid
      amount".
    - **Covers failure**: invalid input and edge cases get their own
