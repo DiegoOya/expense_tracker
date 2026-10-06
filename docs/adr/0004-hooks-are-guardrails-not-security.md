@@ -17,8 +17,11 @@ Layered, and honest about each layer:
 2. **Permission deny rules** for `.env*` and `secrets/`. They also
    cover common file commands in Bash (`cat`, `head`, `sed`, ...).
 3. **PreToolUse hook** (`block_secrets.py`) for what deny rules miss:
-   `grep`, `source`, `python -c "open('.env')"`, `printenv`, ... It
-   runs before permission checks and blocks with exit code 2.
+   `grep`, `source`, `python -c "open('.env')"`, `printenv`, ... and
+   reading credential-like variables (`$GITHUB_PAT`,
+   `os.getenv("API_KEY")`): Bash inherits Claude Code's environment,
+   which holds `GITHUB_PAT` for the GitHub MCP server. It runs before
+   permission checks and blocks with exit code 2.
 4. **The sandbox** is the real boundary if strong isolation is needed.
 
 The hook inspects command text, so it can be evaded (e.g. building the

@@ -2,8 +2,9 @@
 """PreToolUse hook: block Bash commands that touch secrets.
 
 Reads the hook payload from stdin. Exits 2 (block, stderr goes back to
-the agent) when a Bash command references a secret path or dumps the
-environment. Exits 0 otherwise.
+the agent) when a Bash command references a secret path, reads a
+credential-like variable ($GITHUB_PAT, os.getenv("API_KEY")) or dumps
+the environment. Exits 0 otherwise.
 
 This is a guardrail, not a security boundary: it inspects command
 text, so a determined process can evade it. See
@@ -21,12 +22,55 @@ OPERATORS = {";", "&&", "||", "|", "|&", "&"}
 # Subshells and redirections also start a new command or file operand.
 SEPARATOR_CHARS = set("();<>")
 ENV_DUMPERS = {"printenv"}
+# Whole simple commands that print every variable.
+VARIABLE_DUMPS = (
+    ["env"],
+    ["set"],
+    ["export"],
+    ["export", "-p"],
+    ["declare", "-p"],
+    ["declare", "-x"],
+)
 ALLOWED_ENV_FILES = {".env.example"}
+
+# A variable name is sensitive when one of its "_"-separated parts is
+# one of these, so GITHUB_PAT and ANTHROPIC_API_KEY match but PATH and
+# KEYBOARD_LAYOUT do not.
+SENSITIVE_NAME_PARTS = {
+    "CREDENTIALS",
+    "KEY",
+    "PASSWD",
+    "PASSWORD",
+    "PAT",
+    "SECRET",
+    "TOKEN",
+}
 
 # A quoted secret path inside a token, e.g. python -c "open('.env')".
 QUOTED_SECRET = re.compile(
     r"""['"](?:\./)?(?:\.env(?:\.[\w.-]+)?|secrets(?:/[^'"]*)?)['"]"""
 )
+# Shell expansion: $NAME, ${NAME}, ${NAME:-default}.
+VAR_EXPANSION = re.compile(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)")
+# Lookup from code: os.environ['NAME'], os.environ.get("NAME"),
+# os.getenv("NAME").
+ENV_LOOKUP = re.compile(
+    r"(?:environ(?:\.get)?|getenv)\W{1,3}([A-Za-z_][A-Za-z0-9_]*)"
+)
+
+
+def _is_sensitive_name(name: str) -> bool:
+    parts = name.upper().split("_")
+    return any(part in SENSITIVE_NAME_PARTS for part in parts)
+
+
+def _sensitive_variable(command: str) -> str | None:
+    """Return a credential-like variable the command would read."""
+    for pattern in (VAR_EXPANSION, ENV_LOOKUP):
+        for match in pattern.finditer(command):
+            if _is_sensitive_name(match.group(1)):
+                return match.group(1)
+    return None
 
 
 def _is_env_file(name: str) -> bool:
@@ -56,6 +100,9 @@ def _tokenize(command: str) -> list[str]:
 
 def find_violation(command: str) -> str | None:
     """Return a human-readable reason if `command` must be blocked."""
+    variable = _sensitive_variable(command)
+    if variable is not None:
+        return f"reads credential-like variable '{variable}'"
     try:
         tokens = _tokenize(command)
     except ValueError:
@@ -69,8 +116,9 @@ def find_violation(command: str) -> str | None:
         if token in OPERATORS or set(token) <= SEPARATOR_CHARS:
             if segment and segment[0] in ENV_DUMPERS:
                 return f"'{segment[0]}' dumps environment variables"
-            if segment == ["env"]:
-                return "'env' without arguments dumps environment variables"
+            if segment in VARIABLE_DUMPS:
+                dump = " ".join(segment)
+                return f"'{dump}' dumps environment variables"
             segment = []
             continue
         segment.append(token)
@@ -99,8 +147,10 @@ def main() -> int:
         return 0
     print(
         f"Blocked by .claude/hooks/block_secrets.py: command {reason}. "
-        "The agent must never read secrets (.env*, secrets/) or dump "
-        "the environment. Use .env.example to learn the expected keys.",
+        "The agent must never read secrets (.env*, secrets/, "
+        "credential-like variables such as *_PAT or *_TOKEN) or dump "
+        "the environment. Use .env.example to learn the expected keys; "
+        "to check a variable is set, ask the user.",
         file=sys.stderr,
     )
     return 2

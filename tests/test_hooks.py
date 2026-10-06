@@ -50,6 +50,21 @@ def bash(command: str) -> dict[str, object]:
         "env",
         "ls && env | grep PAT",
         "echo $(printenv)",
+        # Expanding a credential-like variable prints its value.
+        "echo $GITHUB_PAT",
+        'echo "${GITHUB_PAT}"',
+        'curl -H "Authorization: Bearer $GITHUB_TOKEN" x',
+        "echo ${ANTHROPIC_API_KEY:-none}",
+        "echo $DB_PASSWORD",
+        "echo x$AWS_SECRET_ACCESS_KEY",
+        "python3 -c \"import os; print(os.environ['GITHUB_PAT'])\"",
+        "python3 -c 'import os; print(os.getenv(\"MY_TOKEN\"))'",
+        # Dumping every variable.
+        "set",
+        "export",
+        "export -p",
+        "declare -p",
+        "declare -x",
     ],
 )
 def test_block_secrets_blocks(command: str) -> None:
@@ -67,6 +82,14 @@ def test_block_secrets_blocks(command: str) -> None:
         "env PYTHONPATH=src python -m expense_tracker.server",
         "ls -la",
         "grep -rn environment src/",
+        # Non-credential variables must keep working.
+        "echo $PATH",
+        "echo $HOME $KEYBOARD_LAYOUT ${PWD}",
+        "export EXPENSE_TRACKER_DB=data/test.db",
+        "set -euo pipefail",
+        "python3 -c \"import os; print(os.environ['HOME'])\"",
+        # Mentioning a name without expanding it is fine.
+        "grep -n GITHUB_PAT README.md .mcp.json",
     ],
 )
 def test_block_secrets_allows(command: str) -> None:

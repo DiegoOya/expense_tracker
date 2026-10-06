@@ -151,6 +151,24 @@ why, and what changed.
    `check_specs.py` only counts one test per criterion). Result: 23
    criteria. Lesson: a reviewer agent optimises for what its prompt
    rewards; "one behaviour" was read as "one code path".
+9. **The secrets hook ignored environment variables.** While
+   explaining how to set `GITHUB_PAT` for the GitHub MCP server, the
+   agent checked its own hook and found `echo $GITHUB_PAT` allowed:
+   only files and `printenv` were covered, yet the agent's Bash
+   inherits Claude Code's environment. Fixed test-first (13 new
+   blocked cases, 6 must-stay-allowed ones such as `$PATH`); names
+   are matched by `_`-separated parts so `PATH` is not `PAT`.
+   Lesson: threat-model where the secret actually lives, not only
+   where secrets usually are. Immediate side effect: the commit for
+   this fix was blocked, because its heredoc message quoted the
+   command. The agent now writes commit messages to a file and runs
+   `git commit -F <file>` instead of weakening the hook.
+10. **ruff formats Python inside Markdown.** `ruff format --check .`
+    failed on `specs/add-expense/plan.md` because ruff 0.16 also
+    formats fenced code blocks in `.md` files. It slipped in because
+    the Stop hook runs pytest and the spec check, not the formatter
+    check; CI would have failed on the first push. Fixed by
+    formatting the plan.
 
 ### Manual hook verification (phase 2)
 
