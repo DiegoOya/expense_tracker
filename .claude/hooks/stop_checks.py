@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Stop hook: run tests and the spec validator before the agent stops.
+"""Stop hook: run the definition-of-done checks before the agent stops.
+
+Runs ruff format --check, ruff check, mypy, pytest and the spec
+validator (the same commands as CI).
 
 On failure, exits 2 and writes the failure to stderr, which Claude
 Code feeds back to the agent so it keeps working.
@@ -9,8 +12,9 @@ continuing because of this hook. In that case we still run the checks
 but never block again; a remaining failure is reported to the user as
 a system message instead.
 
-Skipped when nothing relevant changed (no modified *.py or specs/
-files in `git status`) or when the virtualenv does not exist yet.
+Skipped when nothing relevant changed (no modified *.py, *.md, *.toml
+or specs/ files in `git status`) or when the virtualenv does not
+exist yet.
 """
 
 from __future__ import annotations
@@ -34,7 +38,8 @@ def _relevant_changes(project_dir: Path) -> bool:
     )
     for line in status.stdout.splitlines():
         path = line[3:].split(" -> ")[-1].strip('"')
-        if path.endswith(".py") or path.startswith("specs/"):
+        # ruff also formats Python code blocks inside Markdown.
+        if path.endswith((".py", ".md", ".toml")) or path.startswith("specs/"):
             return True
     return False
 
@@ -57,7 +62,12 @@ def main() -> int:
     if not _relevant_changes(project_dir):
         return 0
 
+    # The full definition of done from AGENTS.md, cheapest first. All
+    # checks run, so the agent sees every failure at once.
     checks = {
+        "ruff format": [str(venv_bin / "ruff"), "format", "--check", "."],
+        "ruff check": [str(venv_bin / "ruff"), "check", "."],
+        "mypy": [str(venv_bin / "mypy")],
         "pytest": [str(venv_bin / "pytest"), "-x", "-q"],
         "check_specs": [
             str(venv_bin / "python"),

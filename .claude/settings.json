@@ -69,7 +69,7 @@
             "command": "python3",
             "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_checks.py"],
             "timeout": 300,
-            "statusMessage": "Running tests and spec check"
+            "statusMessage": "Running ruff, mypy, tests and spec check"
           }
         ]
       }

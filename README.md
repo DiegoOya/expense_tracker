@@ -47,7 +47,7 @@ flowchart LR
 | Permissions | `.claude/settings.json` | Explicit allow list (no `Bash(*)`); deny `.env*`, `secrets/`, `git push`, `curl`, `rm -rf`. |
 | PreToolUse hook | `.claude/hooks/block_secrets.py` | Blocks Bash commands that touch secrets or dump the environment (exit 2). |
 | PostToolUse hook | `.claude/hooks/format_python.py` | `ruff format` + `ruff check --fix` on every edited `.py`; reports unfixable lint to the agent. |
-| Stop hook | `.claude/hooks/stop_checks.py` | Runs pytest and the spec validator; on failure the agent must keep working (once, to avoid loops). |
+| Stop hook | `.claude/hooks/stop_checks.py` | Runs the definition of done (ruff format/check, mypy, pytest, spec validator, same as CI); on failure the agent must keep working (once, to avoid loops). |
 | Skill | `.claude/skills/write-spec` | How to write verifiable, ID-tagged acceptance criteria. |
 | Skill | `.claude/skills/add-mcp-tool` | The full SDD flow with a commit per phase and STOP points. User-invoked only. |
 | Subagent | `.claude/agents/spec-reviewer.md` | Independent, read-only review of a spec or a finished feature. |
@@ -168,7 +168,10 @@ why, and what changed.
     formats fenced code blocks in `.md` files. It slipped in because
     the Stop hook runs pytest and the spec check, not the formatter
     check; CI would have failed on the first push. Fixed by
-    formatting the plan.
+    formatting the plan, and the Stop hook now runs the same checks
+    as CI (about 3 s), with stub-based tests for its behaviour.
+    Lesson: a local gate that checks less than CI moves failures to
+    the slowest feedback loop.
 
 ### Manual hook verification (phase 2)
 

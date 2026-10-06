@@ -154,3 +154,88 @@ def test_format_python_ignores_non_python(tmp_path: Path) -> None:
     target.write_text("# hi\n")
     payload = {"tool_name": "Write", "tool_input": {"file_path": str(target)}}
     assert run_hook("format_python.py", payload, cwd=tmp_path).returncode == 0
+
+
+STOP_CHECKS = ("ruff format", "ruff check", "mypy", "pytest", "check_specs")
+
+
+def make_project(tmp_path: Path, failing: set[str] = frozenset()) -> Path:
+    """A git repo whose .venv/bin tools exit 1 for the `failing` checks.
+
+    The tools are shell stubs that print their name, so tests can see
+    which checks ran and which failures were reported.
+    """
+
+    def code(check: str) -> int:
+        return 1 if check in failing else 0
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    bin_dir = tmp_path / ".venv" / "bin"
+    bin_dir.mkdir(parents=True)
+    stubs = {
+        "ruff": (
+            'if [ "$1" = format ]; then echo "ran ruff format"; '
+            f"exit {code('ruff format')}; fi\n"
+            f'echo "ran ruff check"; exit {code("ruff check")}\n'
+        ),
+        "mypy": f'echo "ran mypy"; exit {code("mypy")}\n',
+        "pytest": f'echo "ran pytest"; exit {code("pytest")}\n',
+        "python": f'echo "ran check_specs"; exit {code("check_specs")}\n',
+    }
+    for name, body in stubs.items():
+        stub = bin_dir / name
+        stub.write_text("#!/bin/sh\n" + body)
+        stub.chmod(0o755)
+    return tmp_path
+
+
+def stop(
+    project: Path, active: bool = False
+) -> subprocess.CompletedProcess[str]:
+    payload = {"hook_event_name": "Stop", "stop_hook_active": active}
+    return run_hook("stop_checks.py", payload, cwd=project)
+
+
+def test_stop_skips_when_nothing_relevant_changed(tmp_path: Path) -> None:
+    project = make_project(tmp_path, failing=set(STOP_CHECKS))
+    result = stop(project)
+    assert result.returncode == 0
+    assert "ran" not in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("changed", ["src/x.py", "specs/a/spec.md", "a.md"])
+def test_stop_runs_every_check_on_relevant_changes(
+    tmp_path: Path, changed: str
+) -> None:
+    project = make_project(tmp_path, failing=set(STOP_CHECKS))
+    (project / changed).parent.mkdir(parents=True, exist_ok=True)
+    (project / changed).write_text("x\n")
+    result = stop(project)
+    assert result.returncode == 2
+    for check in STOP_CHECKS:
+        assert f"## {check} failed" in result.stderr
+
+
+def test_stop_reports_only_failing_checks(tmp_path: Path) -> None:
+    project = make_project(tmp_path, failing={"ruff format", "mypy"})
+    (project / "x.py").write_text("x = 1\n")
+    result = stop(project)
+    assert result.returncode == 2
+    assert "## ruff format failed" in result.stderr
+    assert "## mypy failed" in result.stderr
+    assert "## pytest failed" not in result.stderr
+
+
+def test_stop_passes_when_all_checks_pass(tmp_path: Path) -> None:
+    project = make_project(tmp_path)
+    (project / "x.py").write_text("x = 1\n")
+    assert stop(project).returncode == 0
+
+
+def test_stop_does_not_block_twice(tmp_path: Path) -> None:
+    project = make_project(tmp_path, failing={"pytest"})
+    (project / "x.py").write_text("x = 1\n")
+    result = stop(project, active=True)
+    assert result.returncode == 0
+    message = json.loads(result.stdout)["systemMessage"]
+    assert "## pytest failed" in message
