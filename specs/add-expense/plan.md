@@ -12,26 +12,30 @@ CATEGORIES: tuple[str, ...]  # the 8 categories, in spec order
 CURRENCY = "EUR"
 MAX_AMOUNT = Decimal("1000000.00")
 
+
 class CategorySource(StrEnum):
     USER = "user"
     AUTO = "auto"
 
+
 @dataclass(frozen=True)
-class NewExpense:            # validated, not stored yet
-    amount: Decimal          # always 2 decimal places
-    description: str         # trimmed
+class NewExpense:  # validated, not stored yet
+    amount: Decimal  # always 2 decimal places
+    description: str  # trimmed
     date: datetime.date
     category: str
     category_source: CategorySource
 
+
 @dataclass(frozen=True)
-class Expense:               # stored
+class Expense:  # stored
     id: int
     amount: Decimal
     description: str
     date: datetime.date
     category: str
     category_source: CategorySource
+
 
 class ExpenseValidationError(ValueError):
     """str(error) is exactly the spec message."""
@@ -78,7 +82,7 @@ class SqliteStore:
     def __init__(self, path: Path) -> None: ...  # creates the schema
     def add(self, expense: NewExpense) -> Expense: ...
     def get(self, expense_id: int) -> Expense | None: ...
-    def list_all(self) -> list[Expense]: ...      # ordered by id
+    def list_all(self) -> list[Expense]: ...  # ordered by id
 ```
 
 Schema `expenses(id INTEGER PRIMARY KEY, amount_cents INTEGER NOT
@@ -104,6 +108,7 @@ def build_server(
     categorizer: Categorizer,
     today: Callable[[], datetime.date],
 ) -> MCPServer: ...
+
 
 def main() -> None: ...  # stdio; DB from EXPENSE_TRACKER_DB
 ```
