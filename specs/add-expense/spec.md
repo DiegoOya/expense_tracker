@@ -1,5 +1,5 @@
 ---
-status: draft
+status: planned
 ---
 
 # Add expense
