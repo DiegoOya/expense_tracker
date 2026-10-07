@@ -7,6 +7,7 @@ exception whose message reaches the client in MCP SDK v2
 """
 
 import datetime
+import inspect
 import os
 from collections.abc import Callable
 from pathlib import Path
@@ -48,7 +49,6 @@ def build_server(
     """Create the MCP server with its tools bound to these adapters."""
     server = MCPServer("expense-tracker")
 
-    @server.tool()
     def add_expense(
         amount: str | int | float | bool,
         description: str,
@@ -77,6 +77,9 @@ def build_server(
             raise ToolError(str(error)) from error
         return _to_output(store.add(new_expense))
 
+    # The SDK sends __doc__ verbatim, indentation included; getdoc()
+    # gives the client a clean description.
+    server.tool(description=inspect.getdoc(add_expense))(add_expense)
     return server
 
 

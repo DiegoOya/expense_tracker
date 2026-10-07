@@ -42,7 +42,7 @@ Each task is one commit-sized step. Tick when done.
   them.
 - [x] T13. Spec `status: implemented`; README tool list; README
   lessons if anything went wrong. Commit `feat(add-expense)`.
-- [ ] T14. Manual check: `add_expense` called from Claude Code via
+- [x] T14. Manual check: `add_expense` called from Claude Code via
   the project's `.mcp.json` server.
 
 Coverage check: every AC-ADD-01 to 23 appears in at least one task.
