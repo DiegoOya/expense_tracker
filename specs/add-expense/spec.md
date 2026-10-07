@@ -27,16 +27,18 @@ Categories: `food`, `transport`, `housing`, `utilities`, `health`,
 - `amount`: string or JSON number; booleans are invalid. Strings are
   trimmed, then must be ASCII digits with an optional leading `-` and
   an optional `.` or `,` followed by at least one digit ("5." and ".5"
-  are invalid). JSON numbers are read by their shortest decimal text
-  (19.99 is "19.99"); if that text uses an exponent (1e-05, 1e+20) the
-  amount is invalid. Checks, in order: is a decimal number; at most 2
+  are invalid). JSON integers are read exactly, whatever their size.
+  Other JSON numbers are read by their shortest decimal text (19.99 is
+  "19.99"); if that text uses an exponent (1e-05, 1e+20) the amount is
+  invalid. Checks, in order: is a decimal number; at most 2
   digits after the separator, even if zeros; greater than 0; at most
   1000000.00.
 - `description`: trimmed; 1 to 200 characters after trimming. The
   trimmed text is stored and given to the categorizer.
-- `date`, `category`: missing, `null`, `""` or blank mean "not given".
-  Date: strict `YYYY-MM-DD`, a real calendar day, not after today.
-  Category: trimmed, case-insensitive, must be in the list.
+- `date`, `category`: trimmed; missing, `null`, `""` or blank mean
+  "not given". Date: strict `YYYY-MM-DD` after trimming, a real
+  calendar day, not after today. Category: case-insensitive, must be
+  in the list.
 - "Today" is the server's local date from an injectable clock.
 - Validation order: amount, description, date, category. Only the
   first failure is reported. A rejected call stores nothing.
@@ -63,8 +65,8 @@ several example values, every one of them must be tested.
   opened again, then expense 1 is read back with identical fields.
 - **AC-ADD-04** Given the date is missing, `null`, "" or "   ", when
   added, then date is "2026-10-06".
-- **AC-ADD-05** Given date "2026-10-06", when added, then it is
-  accepted with that date.
+- **AC-ADD-05** Given date "2026-10-06" or " 2026-10-01 ", when added,
+  then date is "2026-10-06" or "2026-10-01" respectively.
 - **AC-ADD-06** Given date "2026-10-07", when added, then the error is
   "date cannot be in the future".
 - **AC-ADD-07** Given date "01/10/2026", "2026-13-01" or "20261001",
@@ -90,8 +92,9 @@ several example values, every one of them must be tested.
   "12.50", "0.01" or "1000000.00" respectively.
 - **AC-ADD-15** Given amount "0" or "-3.00", when added, then the error
   is "amount must be greater than 0".
-- **AC-ADD-16** Given amount "1000000.01", when added, then the error
-  is "amount must be at most 1000000.00".
+- **AC-ADD-16** Given amount "1000000.01" or the JSON integer 10^5000
+  (sent through an MCP client), when added, then the error is "amount
+  must be at most 1000000.00".
 - **AC-ADD-17** Given amount "1.234", "12.500", "1,230", "-1.234" or
   "1000000.001", when added, then the error is "amount must have at
   most 2 decimal places".
@@ -108,8 +111,12 @@ several example values, every one of them must be tested.
 - **AC-ADD-21** Given a description of 200 characters surrounded by
   spaces, when added, then it is accepted and stored without the
   spaces.
-- **AC-ADD-22** Given amount "0" and description "   ", when added,
-  then the error is "amount must be greater than 0".
+- **AC-ADD-22** Given two invalid inputs, when added, then only the
+  first in validation order is reported: amount "0" with description
+  "   " gives "amount must be greater than 0"; description "   " with
+  date "2026-10-07" gives "description must not be empty"; date
+  "2026-10-07" with category "pets" gives "date cannot be in the
+  future".
 - **AC-ADD-23** Given a rejected call, when a valid expense is added
   next, then the database holds only that expense and its id is 1.
 

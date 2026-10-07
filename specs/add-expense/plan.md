@@ -10,7 +10,9 @@ Spec: [spec.md](spec.md). ADRs: 0001 (functional core, one port),
 ```python
 CATEGORIES: tuple[str, ...]  # the 8 categories, in spec order
 CURRENCY = "EUR"
+FALLBACK_CATEGORY = "other"
 MAX_AMOUNT = Decimal("1000000.00")
+MAX_DESCRIPTION_LENGTH = 200
 
 
 class CategorySource(StrEnum):
@@ -30,7 +32,7 @@ class NewExpense:  # validated, not stored yet
 @dataclass(frozen=True)
 class Expense:  # stored
     id: int
-    amount: Decimal
+    amount: Decimal  # 2 decimal places, also when read back
     description: str
     date: datetime.date
     category: str
@@ -69,11 +71,17 @@ Raises `ExpenseValidationError` with the first failure, in the spec's
 order. Calls `categorizer.suggest(trimmed_description)` only when the
 category is not given. Pure: no clock, no I/O; `today` is passed in.
 
-Amount parsing: `bool` -> invalid; `int` -> `str(value)`; `float` ->
-`repr(value)` (shortest text; exponent -> invalid); `str` -> trimmed.
-The text must match `^-?[0-9]+([.,][0-9]+)?$` (ASCII only), then the
-spec's checks run in order. Date: `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` plus
+Amount parsing: `bool` -> invalid; `int` -> exact `Decimal(value)`,
+never via `str()` (Python refuses to convert ints over 4300 digits to
+text), then the range checks; `float` -> `repr(value)` (shortest
+text; exponent -> invalid); `str` -> trimmed. Text must match
+`^-?[0-9]+([.,][0-9]+)?$` (ASCII only), then the spec's checks run in
+order. Date: trimmed, then `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` plus
 `date.fromisoformat` (rejects "20261001" and week dates).
+
+Only the functions and classes listed in this plan are public; helper
+functions are `_`-prefixed. Module constants (patterns, messages,
+keyword tables) may stay public.
 
 ### `expense_tracker.adapters.sqlite_store`
 
@@ -110,15 +118,17 @@ def build_server(
 ) -> MCPServer: ...
 
 
-def main() -> None: ...  # stdio; DB from EXPENSE_TRACKER_DB
+def main() -> None: ...  # stdio; see below for the DB path
 ```
 
 Tool `add_expense(amount: str | int | float | bool, description: str,
 date: str | None = None, category: str | None = None) ->
 ExpenseOut`, where `ExpenseOut` is a `TypedDict` with the 7 output
 keys (`id: int`, the rest `str`). `ExpenseValidationError` is
-re-raised as `ToolError(str(error))`. `main()` creates the database's
-parent directory, and uses `FakeCategorizer` and `date.today`.
+re-raised as `ToolError(str(error))`. `main()` reads the database
+path from `EXPENSE_TRACKER_DB`, default `data/expenses.db` (git-ignored,
+same default as `.mcp.json`), creates its parent directory, and uses
+`FakeCategorizer` and `date.today`.
 
 Verified on mcp 2.3.0 (scratch probe, 2026-10-06): with this union,
 JSON `true` arrives as `bool` and is not coerced to 1, integers stay
@@ -129,8 +139,8 @@ argument both arrive as `None`.
 
 | Layer | How | Criteria |
 | --- | --- | --- |
-| MCP | `Client(build_server(...))`, tmp DB, fixed today | 01, 02, 04 (missing, `null`), 08 (missing, `null`), 14 (JSON 19.99), 18, 23 |
-| Adapter | `SqliteStore(tmp_path / "x.db")` | 03, 21 (stored text) |
+| MCP | `Client(build_server(...))`, tmp DB, fixed today | 01, 02, 04 (missing, `null`), 08 (missing, `null`), 14 (JSON 19.99), 16 (JSON 10^5000), 18, 23 |
+| Adapter | `SqliteStore(tmp_path / "x.db")`; amounts compared as text, since `Decimal` equality ignores scale | 03, 21 (stored text) |
 | Domain | `build_expense(...)`, fixed today, test doubles | all the rest, plus the string values of 04, 08, 14 |
 
 Test doubles live in `tests/`: a categorizer stub returning a fixed
