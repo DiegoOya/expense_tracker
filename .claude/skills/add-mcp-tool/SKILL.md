@@ -1,6 +1,6 @@
 ---
 name: add-mcp-tool
-description: Add a new MCP tool to the expense-tracker server following the full spec-driven flow (spec, plan, tasks, tests, implementation, review), one commit per phase.
+description: Add a new MCP tool to the expense-tracker server following the full spec-driven flow (spec, plan, tasks, tests, implementation, review), with the user reviewing the tests and the code before they are committed, one commit per phase.
 argument-hint: "<tool_name> [what it should do]"
 disable-model-invocation: true
 ---
@@ -12,7 +12,7 @@ Feature slug: the tool name in kebab-case (`add_expense` ->
 `add-expense`).
 
 Follow the phases in order. **Stop and wait for the user** where it
-says STOP.
+says STOP. Never commit tests or code the user has not accepted.
 
 ## 1. Spec
 
@@ -46,9 +46,15 @@ STOP: show the plan and tasks to the user.
 
 Delegate to the `test-writer` subagent with the paths of `spec.md` and
 `plan.md`. It writes tests under `tests/` linked with
-`@pytest.mark.spec(...)`. Run `.venv/bin/pytest` and confirm they fail
-for the right reason (missing code, not a broken test). Commit
-`test(<slug>): ...`.
+`@pytest.mark.spec(...)`. Read what it wrote: its report is not
+evidence. Run `.venv/bin/pytest` and confirm they fail for the right
+reason (missing code, not a broken test).
+
+STOP: show the user the test files (`git diff --stat`, the tests per
+AC, anything test-writer flagged as ambiguous). The tests are red on
+purpose, so the Stop hook blocks the first stop: answer that the
+failure is the expected red step and stop again. Commit
+`test(<slug>): ...` only after the user accepts.
 
 ## 5. Implementation (green)
 
@@ -62,7 +68,12 @@ Run every command in AGENTS.md "Definition of done".
 
 Run the `spec-reviewer` subagent on the whole feature. Fix findings
 or explain why not. Set the spec to `status: implemented`;
-`check_specs.py` must pass. Commit `feat(<slug>): ...`.
+`check_specs.py` must pass.
+
+STOP: show the user the code for review (`git diff --stat`, key
+changes per layer, check results, reviewer verdict and what was fixed
+or left). Make any requested changes and stop again. Commit
+`feat(<slug>): ...` only after the user accepts.
 
 ## 7. Retrospective
 

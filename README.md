@@ -58,7 +58,7 @@ flowchart LR
 | PostToolUse hook | `.claude/hooks/format_python.py` | `ruff format` + `ruff check --fix` on every edited `.py`; reports unfixable lint to the agent. |
 | Stop hook | `.claude/hooks/stop_checks.py` | Runs the definition of done (ruff format/check, mypy, pytest, spec validator, same as CI); on failure the agent must keep working (once, to avoid loops). |
 | Skill | `.claude/skills/write-spec` | How to write verifiable, ID-tagged acceptance criteria. |
-| Skill | `.claude/skills/add-mcp-tool` | The full SDD flow with a commit per phase and STOP points. User-invoked only. |
+| Skill | `.claude/skills/add-mcp-tool` | The full SDD flow with a commit per phase; the developer reviews and accepts the tests and the code before they are committed. User-invoked only. |
 | Subagent | `.claude/agents/spec-reviewer.md` | Independent, read-only review of a spec or a finished feature. |
 | Subagent | `.claude/agents/test-writer.md` | Writes tests from spec + plan, blind to `src/`. |
 | Spec validator | `scripts/check_specs.py` | Every AC of an implemented spec has a test; every test mark points to a real AC. |
