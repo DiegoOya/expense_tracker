@@ -200,7 +200,8 @@ why, and what changed.
     imports are first-party by looking at the files on disk, and the
     cached results came from before the imported modules existed.
     CI, which has no cache, would have failed. Fixed with
-    `ruff check --fix --select I`.
+    `ruff check --fix --select I`, and the Stop hook now runs
+    `ruff check --no-cache` so the local gate matches CI.
 
 ### Manual hook verification (phase 2)
 

@@ -66,7 +66,9 @@ def main() -> int:
     # checks run, so the agent sees every failure at once.
     checks = {
         "ruff format": [str(venv_bin / "ruff"), "format", "--check", "."],
-        "ruff check": [str(venv_bin / "ruff"), "check", "."],
+        # No cache: ruff's first-party detection depends on which
+        # modules exist on disk, so cached results can be stale.
+        "ruff check": [str(venv_bin / "ruff"), "check", "--no-cache", "."],
         "mypy": [str(venv_bin / "mypy")],
         "pytest": [str(venv_bin / "pytest"), "-x", "-q"],
         "check_specs": [

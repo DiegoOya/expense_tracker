@@ -176,7 +176,7 @@ def make_project(tmp_path: Path, failing: set[str] = frozenset()) -> Path:
         "ruff": (
             'if [ "$1" = format ]; then echo "ran ruff format"; '
             f"exit {code('ruff format')}; fi\n"
-            f'echo "ran ruff check"; exit {code("ruff check")}\n'
+            f'echo "ran ruff $*"; exit {code("ruff check")}\n'
         ),
         "mypy": f'echo "ran mypy"; exit {code("mypy")}\n',
         "pytest": f'echo "ran pytest"; exit {code("pytest")}\n',
@@ -230,6 +230,16 @@ def test_stop_passes_when_all_checks_pass(tmp_path: Path) -> None:
     project = make_project(tmp_path)
     (project / "x.py").write_text("x = 1\n")
     assert stop(project).returncode == 0
+
+
+def test_stop_runs_ruff_check_without_cache(tmp_path: Path) -> None:
+    # The local ruff cache once hid import-order errors that CI (no
+    # cache) would reject; see README "What went wrong", entry 13.
+    project = make_project(tmp_path, failing={"ruff check"})
+    (project / "x.py").write_text("x = 1\n")
+    result = stop(project)
+    assert result.returncode == 2
+    assert "ran ruff check --no-cache" in result.stderr
 
 
 def test_stop_does_not_block_twice(tmp_path: Path) -> None:
