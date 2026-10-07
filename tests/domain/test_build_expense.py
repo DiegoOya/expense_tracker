@@ -4,6 +4,7 @@ from datetime import date
 
 import pytest
 from conftest import TODAY, SpyCategorizer, StubCategorizer
+
 from expense_tracker.adapters.fake_categorizer import FakeCategorizer
 from expense_tracker.domain.categorizer import Categorizer
 from expense_tracker.domain.expenses import build_expense
@@ -54,8 +55,16 @@ def test_blank_date_defaults_to_today(given: str) -> None:
 
 
 @pytest.mark.spec("AC-ADD-05")
-def test_date_equal_to_today_is_accepted() -> None:
-    assert build(date="2026-10-06").date == date(2026, 10, 6)
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    [
+        ("2026-10-06", date(2026, 10, 6)),
+        (" 2026-10-01 ", date(2026, 10, 1)),
+    ],
+    ids=["today", "padded"],
+)
+def test_valid_date_is_accepted(given: str, expected: date) -> None:
+    assert build(date=given).date == expected
 
 
 @pytest.mark.spec("AC-ADD-06")
@@ -200,7 +209,29 @@ def test_description_of_200_after_trimming_is_accepted() -> None:
 
 
 @pytest.mark.spec("AC-ADD-22")
-def test_amount_error_is_reported_before_description_error() -> None:
-    assert_rejected(
-        "amount must be greater than 0", amount="0", description="   "
-    )
+@pytest.mark.parametrize(
+    ("inputs", "message"),
+    [
+        (
+            {"amount": "0", "description": "   "},
+            "amount must be greater than 0",
+        ),
+        (
+            {"description": "   ", "date": "2026-10-07"},
+            "description must not be empty",
+        ),
+        (
+            {"date": "2026-10-07", "category": "pets"},
+            "date cannot be in the future",
+        ),
+    ],
+    ids=[
+        "amount-before-description",
+        "description-before-date",
+        "date-before-category",
+    ],
+)
+def test_only_first_error_in_validation_order_is_reported(
+    inputs: dict[str, str], message: str
+) -> None:
+    assert_rejected(message, **inputs)

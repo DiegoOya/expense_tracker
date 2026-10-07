@@ -3,10 +3,11 @@
 from typing import Any
 
 import pytest
-from expense_tracker.adapters.sqlite_store import SqliteStore
 from mcp import Client
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult, TextContent
+
+from expense_tracker.adapters.sqlite_store import SqliteStore
 
 COFFEE: dict[str, Any] = {
     "amount": "12.50",
@@ -116,6 +117,17 @@ async def test_json_number_amount_uses_its_decimal_text(
 
 
 @pytest.mark.anyio
+@pytest.mark.spec("AC-ADD-16")
+async def test_huge_json_integer_amount_is_rejected_as_above_maximum(
+    server: MCPServer,
+) -> None:
+    result = await call_add_expense(server, COFFEE | {"amount": 10**5000})
+
+    assert result.is_error is True
+    assert "amount must be at most 1000000.00" in text_of(result)
+
+
+@pytest.mark.anyio
 @pytest.mark.spec("AC-ADD-18")
 @pytest.mark.parametrize(
     "amount",
@@ -129,7 +141,7 @@ async def test_json_number_amount_uses_its_decimal_text(
         "1.234,50",
         "5.",
         ".5",
-        "١٢",  # Arabic-Indic digits one and two
+        "\u0661\u0662",  # Arabic-Indic digits one and two
         True,
         0.00001,
     ],

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from conftest import TODAY
+
 from expense_tracker.adapters.fake_categorizer import FakeCategorizer
 from expense_tracker.adapters.sqlite_store import SqliteStore
 from expense_tracker.domain.expenses import build_expense
@@ -27,9 +28,9 @@ def coffee() -> NewExpense:
 def test_stored_expense_is_read_back_after_reopening(db_path: Path) -> None:
     SqliteStore(db_path).add(coffee())
 
-    reopened = SqliteStore(db_path)
+    read_back = SqliteStore(db_path).get(1)
 
-    assert reopened.get(1) == Expense(
+    assert read_back == Expense(
         id=1,
         amount=Decimal("12.50"),
         description="Coffee at Example Cafe",
@@ -37,9 +38,11 @@ def test_stored_expense_is_read_back_after_reopening(db_path: Path) -> None:
         category="food",
         category_source=CategorySource.USER,
     )
+    # Decimal equality ignores scale; the text proves 2 decimal places.
+    assert read_back is not None
+    assert str(read_back.amount) == "12.50"
 
 
-@pytest.mark.spec("AC-ADD-03")
 def test_add_returns_the_stored_expense_with_id_1(
     store: SqliteStore,
 ) -> None:

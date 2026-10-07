@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from expense_tracker.adapters.sqlite_store import SqliteStore
     from mcp.server.mcpserver import MCPServer
+
+    from expense_tracker.adapters.sqlite_store import SqliteStore
 
 # Fixed "today" for every test (spec: today = 2026-10-06).
 TODAY = date(2026, 10, 6)
@@ -62,7 +63,6 @@ def store(db_path: Path) -> SqliteStore:
 @pytest.fixture
 def server(store: SqliteStore) -> MCPServer:
     from expense_tracker.adapters.fake_categorizer import FakeCategorizer
-
     from expense_tracker.server import build_server
 
     return build_server(store, FakeCategorizer(), lambda: TODAY)
