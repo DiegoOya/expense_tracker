@@ -16,31 +16,31 @@ Each task is one commit-sized step. Tick when done.
   Covers: AC-ADD-03, 21 (stored text).
 - [x] T4. MCP tests in `tests/server/test_add_expense_tool.py`.
   Covers: AC-ADD-01, 02, 04 (missing, `null`), 08 (missing, `null`),
-  14 (JSON 19.99), 18, 23.
+  14 (JSON 19.99), 16 (JSON 10^5000), 18, 23.
 - [x] T5. Run pytest: the new tests fail only with import errors or
   missing behaviour, never with errors in the tests themselves.
   Commit `test(add-expense)`.
 
 ## Green: implementation
 
-- [ ] T6. `domain/model.py` and `domain/categorizer.py` (types,
+- [x] T6. `domain/model.py` and `domain/categorizer.py` (types,
   constants, error, port). Covers: structure for all ACs.
-- [ ] T7. `domain/expenses.py`: `build_expense` with amount, description,
+- [x] T7. `domain/expenses.py`: `build_expense` with amount, description,
   date and category rules in spec order. Covers: AC-ADD-04 to 22
   (domain part).
-- [ ] T8. `adapters/fake_categorizer.py`. Covers: AC-ADD-08, 09.
-- [ ] T9. `adapters/sqlite_store.py`. Covers: AC-ADD-03, 21, 23.
-- [ ] T10. `server.py`: `build_server`, `add_expense` tool,
+- [x] T8. `adapters/fake_categorizer.py`. Covers: AC-ADD-08, 09.
+- [x] T9. `adapters/sqlite_store.py`. Covers: AC-ADD-03, 21, 23.
+- [x] T10. `server.py`: `build_server`, `add_expense` tool,
   `ToolError` mapping, `main()` wiring. Covers: AC-ADD-01, 02, 04,
-  08, 14, 18, 23.
-- [ ] T11. Definition of done: ruff, mypy, pytest, check_specs;
+  08, 14, 16, 18, 23.
+- [x] T11. Definition of done: ruff, mypy, pytest, check_specs;
   domain purity test still green.
 
 ## Review and close
 
-- [ ] T12. `spec-reviewer` feature review; fix findings or explain
+- [x] T12. `spec-reviewer` feature review; fix findings or explain
   them.
-- [ ] T13. Spec `status: implemented`; README tool list; README
+- [x] T13. Spec `status: implemented`; README tool list; README
   lessons if anything went wrong. Commit `feat(add-expense)`.
 - [ ] T14. Manual check: `add_expense` called from Claude Code via
   the project's `.mcp.json` server.

@@ -23,6 +23,15 @@ project and approve the `expense-tracker` server from `.mcp.json`
 (`/mcp`). The optional `github` server needs `GITHUB_PAT` set to a
 fine-grained token; without it, it simply does not connect.
 
+## MCP tools
+
+| Tool | Spec | What it does |
+| --- | --- | --- |
+| `add_expense(amount, description, date?, category?)` | [add-expense](specs/add-expense/spec.md) | Records one expense in EUR. Amount as text or number (`"12.50"`, `"12,50"`, `19.99`); date defaults to today and cannot be in the future; category is suggested by the categorizer when omitted. Returns the stored expense; invalid input returns a tool error with the exact reason. |
+
+`list_expenses` and `monthly_report` are next, each with its own
+spec.
+
 ## How the agent works here
 
 ```mermaid
@@ -172,6 +181,26 @@ why, and what changed.
     as CI (about 3 s), with stub-based tests for its behaviour.
     Lesson: a local gate that checks less than CI moves failures to
     the slowest feedback loop.
+11. **Green on the first run did not mean done.** All 133 tests
+    passed at the first implementation attempt, yet the feature
+    review found a scale-blind assertion (`Decimal("12.5") ==
+    Decimal("12.50")` is true, so AC-ADD-03 could not catch a store
+    that lost the cents format) and a crash: Python refuses `str()` on
+    ints over 4300 digits, so a JSON amount of 10^5000 reached the
+    client as an opaque error. The fix followed the flow: the
+    developer approved spec changes, test-writer added the cases (the
+    10^5000 one went red), then the code changed.
+12. **A subagent's report is not evidence.** test-writer reported
+    having written the Arabic-Indic digits as an escape; the file had
+    the literal characters. Harmless here, but from then on the main
+    agent checks files, not summaries.
+13. **"All checks passed" can be stale.** The committed red-step
+    tests (including `conftest.py`) failed ruff's import sorting with
+    `--no-cache`, but passed with the local cache: ruff decides which
+    imports are first-party by looking at the files on disk, and the
+    cached results came from before the imported modules existed.
+    CI, which has no cache, would have failed. Fixed with
+    `ruff check --fix --select I`.
 
 ### Manual hook verification (phase 2)
 
