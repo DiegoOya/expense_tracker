@@ -5,19 +5,19 @@ Each task is one commit-sized step. Tick when done.
 
 ## Red: tests (test-writer subagent, from spec + plan only)
 
-- [ ] T1. Test infrastructure: `tests/conftest.py` with `TODAY =
+- [x] T1. Test infrastructure: `tests/conftest.py` with `TODAY =
   date(2026, 10, 6)`, temporary database, `client` fixture over
   `build_server(...)`, categorizer stub and spy; anyio backend
   fixture. Covers: none (enables all).
-- [ ] T2. Domain tests in `tests/domain/test_build_expense.py`.
+- [x] T2. Domain tests in `tests/domain/test_build_expense.py`.
   Covers: AC-ADD-04 (string values), 05, 06, 07, 08 (string values),
   09, 10, 11, 12, 13, 14 (string values), 15, 16, 17, 19, 20, 21, 22.
-- [ ] T3. Adapter tests in `tests/adapters/test_sqlite_store.py`.
+- [x] T3. Adapter tests in `tests/adapters/test_sqlite_store.py`.
   Covers: AC-ADD-03, 21 (stored text).
-- [ ] T4. MCP tests in `tests/server/test_add_expense_tool.py`.
+- [x] T4. MCP tests in `tests/server/test_add_expense_tool.py`.
   Covers: AC-ADD-01, 02, 04 (missing, `null`), 08 (missing, `null`),
   14 (JSON 19.99), 18, 23.
-- [ ] T5. Run pytest: the new tests fail only with import errors or
+- [x] T5. Run pytest: the new tests fail only with import errors or
   missing behaviour, never with errors in the tests themselves.
   Commit `test(add-expense)`.
 
