@@ -202,6 +202,26 @@ why, and what changed.
     CI, which has no cache, would have failed. Fixed with
     `ruff check --fix --select I`, and the Stop hook now runs
     `ruff check --no-cache` so the local gate matches CI.
+14. **The agent assumed the repo had never been pushed.** While
+    proposing to rewrite history to replace a personal email in
+    the commits, the agent said "nothing has been pushed yet"
+    without checking `git remote`. The developer's own `git push`
+    showed an `origin` already holding all commits. The repo was
+    private, so the plan changed to: rewrite with `filter-branch`
+    (tree verified identical byte for byte), delete and recreate
+    the GitHub repo so the old commits are not reachable by hash,
+    push again. Lesson: check state (`git remote -v`, `git branch
+    -vv`) before stating it.
+15. **The secret scan in CI scanned nothing and still said "no
+    leaks".** On the first push to the recreated repo,
+    `gitleaks-action` scanned `<first pushed commit>^..<last>`;
+    the first commit is the root, so the range was invalid, git
+    failed, and the action logged "scanned ~0 bytes ... no leaks
+    found in partial scan" before exiting with an error. Without
+    that error it would have been a silent false negative. CI now
+    runs the gitleaks CLI (checksum verified) with `gitleaks git .`,
+    the same full-history scan validated locally. Lesson: when a
+    security check passes, look at what it actually scanned.
 
 ### Manual hook verification (phase 2)
 
