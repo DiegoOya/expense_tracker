@@ -236,3 +236,7 @@ Done live in a Claude Code session on this repo, besides
 - Ending a turn with a deliberately failing test -> `stop_checks.py`
   blocked the stop and fed the pytest failure back; the agent removed
   the test and the next stop passed.
+
+## License
+
+[MIT](LICENSE).
