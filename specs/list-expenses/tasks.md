@@ -5,16 +5,16 @@ Each task is one commit-sized step. Tick when done.
 
 ## Red: tests (test-writer subagent, from spec + plan only)
 
-- [ ] T1. Test fixtures: the spec's six-row dataset stored in order
+- [x] T1. Test fixtures: the spec's six-row dataset stored in order
   (ids 1 to 6) and a 201-row store; reuse the existing `store`,
   `server` and anyio fixtures. Covers: none (enables all).
-- [ ] T2. Domain tests in `tests/domain/test_build_filter.py`.
+- [x] T2. Domain tests in `tests/domain/test_build_filter.py`.
   Covers: AC-LST-10, 11, 12, 13, 14, 16.
-- [ ] T3. Store tests in `tests/adapters/test_search.py`.
+- [x] T3. Store tests in `tests/adapters/test_search.py`.
   Covers: AC-LST-02, 03, 04, 05, 06 ("", "   "), 07, 09.
-- [ ] T4. MCP tests in `tests/server/test_list_expenses_tool.py`.
+- [x] T4. MCP tests in `tests/server/test_list_expenses_tool.py`.
   Covers: AC-LST-01, 06 (`null`), 08, 15, 17.
-- [ ] T5. Run pytest: new tests fail only with import errors or
+- [x] T5. Run pytest: new tests fail only with import errors or
   missing behaviour; the existing 138 tests still pass. Commit
   `test(list-expenses)` after the developer accepts.
 

@@ -66,3 +66,60 @@ def server(store: SqliteStore) -> MCPServer:
     from expense_tracker.server import build_server
 
     return build_server(store, FakeCategorizer(), lambda: TODAY)
+
+
+@pytest.fixture
+def dataset(store: SqliteStore) -> SqliteStore:
+    """Store the six expenses of the list-expenses spec, in its order.
+
+    Ids are 1 to 6. Id 6 is stored last but dated 2026-09-30, so the
+    date order (5, 4, 3, 2, 6, 1) differs from the id order.
+    """
+    from decimal import Decimal
+
+    from expense_tracker.domain.model import CategorySource, NewExpense
+
+    rows = [
+        ("2026-09-28", "750.00", "Rent for September", "housing"),
+        ("2026-10-01", "3.50", "Coffee at Example Cafe", "food"),
+        (
+            "2026-10-01",
+            "12.80",
+            "Train ticket to Example City",
+            "transport",
+        ),
+        ("2026-10-03", "45.10", "Groceries at Example Market", "food"),
+        ("2026-10-05", "9.00", "Cinema at Example Plaza", "leisure"),
+        ("2026-09-30", "31.20", "Water bill for September", "utilities"),
+    ]
+    for day, amount, description, category in rows:
+        store.add(
+            NewExpense(
+                amount=Decimal(amount),
+                description=description,
+                date=date.fromisoformat(day),
+                category=category,
+                category_source=CategorySource.USER,
+            )
+        )
+    return store
+
+
+@pytest.fixture
+def many_expenses(store: SqliteStore) -> SqliteStore:
+    """Store 201 expenses (ids 1 to 201), all dated 2026-10-01."""
+    from decimal import Decimal
+
+    from expense_tracker.domain.model import CategorySource, NewExpense
+
+    for number in range(1, 202):
+        store.add(
+            NewExpense(
+                amount=Decimal("1.00"),
+                description=f"Example expense {number}",
+                date=date(2026, 10, 1),
+                category="other",
+                category_source=CategorySource.USER,
+            )
+        )
+    return store
