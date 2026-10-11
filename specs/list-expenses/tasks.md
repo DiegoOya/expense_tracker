@@ -20,27 +20,27 @@ Each task is one commit-sized step. Tick when done.
 
 ## Green: implementation
 
-- [ ] T6. `domain/parsing.py`: move `optional_text`, `strict_date`,
+- [x] T6. `domain/parsing.py`: move `optional_text`, `strict_date`,
   `known_category` and `UNKNOWN_CATEGORY` out of `domain/expenses.py`
   and use them there. Covers: shared rules for AC-LST-03, 04, 06, 10,
   11, 13; add-expense tests must stay green untouched.
-- [ ] T7. `domain/model.py` (`ExpenseFilter`, `ExpensePage`,
+- [x] T7. `domain/model.py` (`ExpenseFilter`, `ExpensePage`,
   `DEFAULT_LIMIT`, `MAX_LIMIT`) and `domain/filters.py`
   (`build_filter`). Covers: AC-LST-06, 10 to 14, 16.
-- [ ] T8. `SqliteStore.search`. Covers: AC-LST-01 to 05, 07, 08, 09.
-- [ ] T9. `server.py`: `list_expenses` tool, `ExpenseListOut`,
+- [x] T8. `SqliteStore.search`. Covers: AC-LST-01 to 05, 07, 08, 09.
+- [x] T9. `server.py`: `list_expenses` tool, `ExpenseListOut`,
   `ToolError` mapping. Covers: AC-LST-01, 06, 08, 15, 17.
-- [ ] T10. Definition of done: ruff, mypy, pytest, check_specs;
+- [x] T10. Definition of done: ruff, mypy, pytest, check_specs;
   domain purity test still green.
 
 ## Review and close
 
-- [ ] T11. `spec-reviewer` feature review; fix findings or explain
+- [x] T11. `spec-reviewer` feature review; fix findings or explain
   them.
-- [ ] T12. Spec `status: implemented`; README tool list; README
+- [x] T12. Spec `status: implemented`; README tool list; README
   lessons if anything went wrong. Commit `feat(list-expenses)` after
   the developer accepts.
-- [ ] T13. Manual check: `list_expenses` called from Claude Code via
+- [x] T13. Manual check: `list_expenses` called from Claude Code via
   the project's `.mcp.json` server.
 
 Coverage check: every AC-LST-01 to 17 appears in at least one task.

@@ -12,7 +12,13 @@ from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 
-from expense_tracker.domain.model import CategorySource, Expense, NewExpense
+from expense_tracker.domain.model import (
+    CategorySource,
+    Expense,
+    ExpenseFilter,
+    ExpensePage,
+    NewExpense,
+)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS expenses (
@@ -77,6 +83,27 @@ class SqliteStore:
             ).fetchall()
         return [_to_expense(row) for row in rows]
 
+    def search(self, expense_filter: ExpenseFilter) -> ExpensePage:
+        """Expenses matching the filter, most recent first.
+
+        Ordered by date, then id, both descending. `total_count` counts
+        every match; the page is cut to `expense_filter.limit`.
+        """
+        where, values = _where(expense_filter)
+        with self._connection() as connection:
+            total: int = connection.execute(
+                f"SELECT COUNT(*) FROM expenses{where}", values
+            ).fetchone()[0]
+            rows = connection.execute(
+                f"SELECT {COLUMNS} FROM expenses{where}"
+                " ORDER BY date DESC, id DESC LIMIT ?",
+                (*values, expense_filter.limit),
+            ).fetchall()
+        return ExpensePage(
+            expenses=tuple(_to_expense(row) for row in rows),
+            total_count=total,
+        )
+
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self._path)
@@ -85,6 +112,29 @@ class SqliteStore:
                 yield connection
         finally:
             connection.close()
+
+
+def _where(expense_filter: ExpenseFilter) -> tuple[str, list[str]]:
+    """The WHERE clause of a filter and the values to bind to it.
+
+    Only fixed clause text and "?" placeholders go into the SQL; the
+    filter's values are always bound, never formatted in. Dates are
+    ISO text, so comparing the text compares the dates.
+    """
+    clauses: list[str] = []
+    values: list[str] = []
+    if expense_filter.date_from is not None:
+        clauses.append("date >= ?")
+        values.append(expense_filter.date_from.isoformat())
+    if expense_filter.date_to is not None:
+        clauses.append("date <= ?")
+        values.append(expense_filter.date_to.isoformat())
+    if expense_filter.category is not None:
+        clauses.append("category = ?")
+        values.append(expense_filter.category)
+    if not clauses:
+        return "", values
+    return " WHERE " + " AND ".join(clauses), values
 
 
 def _to_cents(amount: Decimal) -> int:

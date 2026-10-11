@@ -20,6 +20,7 @@ from expense_tracker.adapters.fake_categorizer import FakeCategorizer
 from expense_tracker.adapters.sqlite_store import SqliteStore
 from expense_tracker.domain.categorizer import Categorizer
 from expense_tracker.domain.expenses import build_expense
+from expense_tracker.domain.filters import build_filter
 from expense_tracker.domain.model import (
     CURRENCY,
     Expense,
@@ -39,6 +40,13 @@ class ExpenseOut(TypedDict):
     date: str
     category: str
     category_source: str
+
+
+class ExpenseListOut(TypedDict):
+    """Structured output of a listing."""
+
+    expenses: list[ExpenseOut]
+    total_count: int
 
 
 def build_server(
@@ -77,9 +85,40 @@ def build_server(
             raise ToolError(str(error)) from error
         return _to_output(store.add(new_expense))
 
+    def list_expenses(
+        date_from: str | None = None,
+        date_to: str | None = None,
+        category: str | None = None,
+        limit: int | float | str | bool | None = None,
+    ) -> ExpenseListOut:
+        """List stored expenses, most recent first.
+
+        date_from, date_to: YYYY-MM-DD, inclusive bounds, both optional.
+        category: one of food, transport, housing, utilities, health,
+        leisure, shopping, other; optional.
+        limit: integer from 1 to 200, default 50.
+        Returns the expenses and total_count, the number of expenses
+        that match the filters before the limit is applied.
+        """
+        try:
+            expense_filter = build_filter(
+                date_from=date_from,
+                date_to=date_to,
+                category=category,
+                limit=limit,
+            )
+        except ExpenseValidationError as error:
+            raise ToolError(str(error)) from error
+        page = store.search(expense_filter)
+        return ExpenseListOut(
+            expenses=[_to_output(expense) for expense in page.expenses],
+            total_count=page.total_count,
+        )
+
     # The SDK sends __doc__ verbatim, indentation included; getdoc()
     # gives the client a clean description.
-    server.tool(description=inspect.getdoc(add_expense))(add_expense)
+    for tool in (add_expense, list_expenses):
+        server.tool(description=inspect.getdoc(tool))(tool)
     return server
 
 

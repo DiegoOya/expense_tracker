@@ -28,9 +28,9 @@ fine-grained token; without it, it simply does not connect.
 | Tool | Spec | What it does |
 | --- | --- | --- |
 | `add_expense(amount, description, date?, category?)` | [add-expense](specs/add-expense/spec.md) | Records one expense in EUR. Amount as text or number (`"12.50"`, `"12,50"`, `19.99`); date defaults to today and cannot be in the future; category is suggested by the categorizer when omitted. Returns the stored expense; invalid input returns a tool error with the exact reason. |
+| `list_expenses(date_from?, date_to?, category?, limit?)` | [list-expenses](specs/list-expenses/spec.md) | Lists stored expenses, most recent first, with optional inclusive date range and category filters. `limit` is 50 by default and 200 at most; `total_count` says how many expenses matched before the limit. Invalid input returns a tool error with the exact reason. |
 
-`list_expenses` and `monthly_report` are next, each with its own
-spec.
+`monthly_report` is next, with its own spec.
 
 ## How the agent works here
 
@@ -222,6 +222,35 @@ why, and what changed.
     runs the gitleaks CLI (checksum verified) with `gitleaks git .`,
     the same full-history scan validated locally. Lesson: when a
     security check passes, look at what it actually scanned.
+16. **The first test dataset could not prove the sort order.** The
+    `list-expenses` spec stored its example rows in date order, so an
+    implementation ordering by id alone would have passed every
+    criterion. The reviewer caught it; row 6 is now stored last but
+    dated earlier. The same spec said "future dates are allowed" in a
+    spec whose sibling rejects them; the reviewer called it
+    consistent, the developer found it confusing, and the sentence
+    now explains why a future bound is harmless. Lesson: a reviewer
+    checks verifiability, not whether a human can read it.
+17. **A test that passed before the implementation existed.** In the
+    red step, the 14 "listing never changes stored data" cases passed
+    with no tool at all (`Unknown tool` is an error, and nothing
+    changed). The agent's report did not mention it; counting passes
+    in the red run did. Two rounds with test-writer: assert the
+    expected outcome, then the exact error message. Lesson: in the
+    red step, every test must be seen failing, not most.
+18. **The cache lesson came back, this time predicted.** Test files
+    importing a module that does not exist yet get their imports
+    grouped as third-party; once it exists, ruff wants them
+    regrouped (entry 13). A copy of the repo with a stub module
+    confirmed it before implementing, and the mechanical fix
+    (`ruff --fix --select I`, imports only) was recorded in the
+    commit.
+19. **A textual guard has false positives.** `block_secrets.py`
+    blocked two harmless commands of the agent because they contained
+    the word `secrets` (a CI job name) and `set(` (Python code in a
+    heredoc). Both were solved by moving the text to a file, not by
+    loosening the hook. That is the cost of guarding on command text
+    (ADR 4): an occasional detour is cheaper than a hole.
 
 ### Manual hook verification (phase 2)
 

@@ -1,5 +1,5 @@
 ---
-status: planned
+status: implemented
 ---
 
 # List expenses

@@ -19,11 +19,16 @@ from expense_tracker.domain.model import (
     ExpenseValidationError,
     NewExpense,
 )
+from expense_tracker.domain.parsing import (
+    UNKNOWN_CATEGORY,
+    known_category,
+    optional_text,
+    strict_date,
+)
 
 # ASCII digits only ([0-9], not \d), optional sign, optional "." or
 # "," followed by at least one digit. Group 1 holds the decimals.
 AMOUNT_TEXT = re.compile(r"-?[0-9]+(?:[.,]([0-9]+))?")
-DATE_TEXT = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 CENT = Decimal("0.01")
 
 NOT_A_NUMBER = "amount must be a decimal number"
@@ -36,7 +41,6 @@ LONG_DESCRIPTION = (
 )
 INVALID_DATE = "date must be a valid YYYY-MM-DD date"
 FUTURE_DATE = "date cannot be in the future"
-UNKNOWN_CATEGORY = "category must be one of: " + ", ".join(CATEGORIES)
 
 
 def build_expense(
@@ -57,7 +61,7 @@ def build_expense(
     parsed_amount = _parse_amount(amount)
     clean_description = _parse_description(description)
     expense_date = _parse_date(date, today)
-    given_category = _given(category)
+    given_category = optional_text(category)
 
     if given_category is None:
         suggestion = categorizer.suggest(clean_description)
@@ -70,13 +74,14 @@ def build_expense(
             category_source=CategorySource.AUTO,
         )
 
-    if given_category.lower() not in CATEGORIES:
+    known = known_category(given_category)
+    if known is None:
         raise ExpenseValidationError(UNKNOWN_CATEGORY)
     return NewExpense(
         amount=parsed_amount,
         description=clean_description,
         date=expense_date,
-        category=given_category.lower(),
+        category=known,
         category_source=CategorySource.USER,
     )
 
@@ -122,22 +127,12 @@ def _parse_description(description: str) -> str:
 
 def _parse_date(date: str | None, today: datetime.date) -> datetime.date:
     """Return the expense date (today when not given), or raise."""
-    text = _given(date)
+    text = optional_text(date)
     if text is None:
         return today
-    if DATE_TEXT.fullmatch(text) is None:
+    parsed = strict_date(text)
+    if parsed is None:
         raise ExpenseValidationError(INVALID_DATE)
-    try:
-        parsed = datetime.date.fromisoformat(text)
-    except ValueError:
-        raise ExpenseValidationError(INVALID_DATE) from None
     if parsed > today:
         raise ExpenseValidationError(FUTURE_DATE)
     return parsed
-
-
-def _given(value: str | None) -> str | None:
-    """Trimmed value, or None when missing, null or blank."""
-    if value is None or not value.strip():
-        return None
-    return value.strip()

@@ -1,8 +1,8 @@
 """Domain rules of list-expenses, tested through build_filter."""
 
 import pytest
-from expense_tracker.domain.filters import build_filter
 
+from expense_tracker.domain.filters import build_filter
 from expense_tracker.domain.model import ExpenseValidationError
 
 CATEGORY_ERROR = (

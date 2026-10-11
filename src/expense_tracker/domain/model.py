@@ -19,6 +19,8 @@ FALLBACK_CATEGORY = "other"
 CURRENCY = "EUR"
 MAX_AMOUNT = Decimal("1000000.00")
 MAX_DESCRIPTION_LENGTH = 200
+DEFAULT_LIMIT = 50
+MAX_LIMIT = 200
 
 
 class CategorySource(StrEnum):
@@ -53,6 +55,32 @@ class Expense:
     date: datetime.date
     category: str
     category_source: CategorySource
+
+
+@dataclass(frozen=True)
+class ExpenseFilter:
+    """Validated filters of a listing.
+
+    Date bounds are inclusive; `category` is lower-case and in
+    CATEGORIES; `limit` is between 1 and MAX_LIMIT.
+    """
+
+    date_from: datetime.date | None
+    date_to: datetime.date | None
+    category: str | None
+    limit: int
+
+
+@dataclass(frozen=True)
+class ExpensePage:
+    """One listing result.
+
+    `expenses` is ordered most recent first and cut to the filter's
+    limit; `total_count` counts every match, before the limit.
+    """
+
+    expenses: tuple[Expense, ...]
+    total_count: int
 
 
 class ExpenseValidationError(ValueError):

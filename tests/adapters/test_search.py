@@ -1,9 +1,9 @@
 """Listing expenses from SQLite: search with a validated filter."""
 
 import pytest
-from expense_tracker.domain.filters import build_filter
 
 from expense_tracker.adapters.sqlite_store import SqliteStore
+from expense_tracker.domain.filters import build_filter
 from expense_tracker.domain.model import ExpensePage
 
 ALL_IDS = [5, 4, 3, 2, 6, 1]
