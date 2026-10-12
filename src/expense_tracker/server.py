@@ -10,6 +10,7 @@ import datetime
 import inspect
 import os
 from collections.abc import Callable
+from decimal import Decimal
 from pathlib import Path
 from typing import TypedDict
 
@@ -25,7 +26,10 @@ from expense_tracker.domain.model import (
     CURRENCY,
     Expense,
     ExpenseValidationError,
+    MonthlyReport,
+    YearMonth,
 )
+from expense_tracker.domain.reports import build_report, build_report_request
 
 DEFAULT_DB_PATH = "data/expenses.db"
 
@@ -47,6 +51,43 @@ class ExpenseListOut(TypedDict):
 
     expenses: list[ExpenseOut]
     total_count: int
+
+
+class CategoryShareOut(TypedDict):
+    """One category of a monthly report."""
+
+    category: str
+    total: str
+    count: int
+    percentage: str
+
+
+class CategoryDifferenceOut(TypedDict):
+    """One category of a report's comparison."""
+
+    category: str
+    total: str
+    difference: str
+
+
+class ComparisonOut(TypedDict):
+    """The compared month of a report."""
+
+    month: str
+    total: str
+    difference: str
+    categories: list[CategoryDifferenceOut]
+
+
+class MonthlyReportOut(TypedDict):
+    """Structured output of a monthly report."""
+
+    month: str
+    currency: str
+    total: str
+    count: int
+    categories: list[CategoryShareOut]
+    comparison: ComparisonOut
 
 
 def build_server(
@@ -115,9 +156,38 @@ def build_server(
             total_count=page.total_count,
         )
 
+    def monthly_report(
+        month: str | None = None,
+        compare_to: str | None = None,
+    ) -> MonthlyReportOut:
+        """Summarise one month of expenses and compare it with another.
+
+        month: YYYY-MM, from 1900-01 to the current month; defaults to
+        the current month.
+        compare_to: YYYY-MM, the month to compare with; defaults to the
+        month before `month`.
+        Returns the month's total and number of expenses, the total,
+        count and percentage of each category, and the differences with
+        the compared month ("+" more, "-" less), overall and per
+        category.
+        """
+        try:
+            request = build_report_request(
+                month=month, compare_to=compare_to, today=today()
+            )
+        except ExpenseValidationError as error:
+            raise ToolError(str(error)) from error
+        report = build_report(
+            request.month,
+            _month_expenses(store, request.month),
+            request.compare_to,
+            _month_expenses(store, request.compare_to),
+        )
+        return _to_report_output(report)
+
     # The SDK sends __doc__ verbatim, indentation included; getdoc()
     # gives the client a clean description.
-    for tool in (add_expense, list_expenses):
+    for tool in (add_expense, list_expenses, monthly_report):
         server.tool(description=inspect.getdoc(tool))(tool)
     return server
 
@@ -132,6 +202,53 @@ def _to_output(expense: Expense) -> ExpenseOut:
         category=expense.category,
         category_source=expense.category_source.value,
     )
+
+
+def _month_expenses(store: SqliteStore, month: YearMonth) -> list[Expense]:
+    return store.between(month.first_day(), month.last_day())
+
+
+def _to_report_output(report: MonthlyReport) -> MonthlyReportOut:
+    comparison = report.comparison
+    return MonthlyReportOut(
+        month=str(report.month),
+        currency=CURRENCY,
+        total=str(report.total),
+        count=report.count,
+        categories=[
+            CategoryShareOut(
+                category=share.category,
+                total=str(share.total),
+                count=share.count,
+                percentage=str(share.percentage),
+            )
+            for share in report.categories
+        ],
+        comparison=ComparisonOut(
+            month=str(comparison.month),
+            total=str(comparison.total),
+            difference=_signed(comparison.difference),
+            categories=[
+                CategoryDifferenceOut(
+                    category=item.category,
+                    total=str(item.total),
+                    difference=_signed(item.difference),
+                )
+                for item in comparison.categories
+            ],
+        ),
+    )
+
+
+def _signed(value: Decimal) -> str:
+    """Difference as text: "+28.60", "-730.80", or "0.00" (no sign).
+
+    The zero check comes first because format(..., "+.2f") gives
+    "+0.00", and Decimal("-0.00") would print "-0.00".
+    """
+    if value == 0:
+        return "0.00"
+    return format(value, "+.2f")
 
 
 def main() -> None:

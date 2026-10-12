@@ -29,8 +29,10 @@ fine-grained token; without it, it simply does not connect.
 | --- | --- | --- |
 | `add_expense(amount, description, date?, category?)` | [add-expense](specs/add-expense/spec.md) | Records one expense in EUR. Amount as text or number (`"12.50"`, `"12,50"`, `19.99`); date defaults to today and cannot be in the future; category is suggested by the categorizer when omitted. Returns the stored expense; invalid input returns a tool error with the exact reason. |
 | `list_expenses(date_from?, date_to?, category?, limit?)` | [list-expenses](specs/list-expenses/spec.md) | Lists stored expenses, most recent first, with optional inclusive date range and category filters. `limit` is 50 by default and 200 at most; `total_count` says how many expenses matched before the limit. Invalid input returns a tool error with the exact reason. |
+| `monthly_report(month?, compare_to?)` | [monthly-report](specs/monthly-report/spec.md) | Summarises one month (default: the current one): total, number of expenses, and total, count and percentage per category. Compares it with another month (default: the previous one), overall and per category, with signed differences (`"+28.60"`, `"-730.80"`). Months from 1900-01; invalid input returns a tool error with the exact reason. |
 
-`monthly_report` is next, with its own spec.
+Next: comparing a month with the average of the last X months, as a
+second iteration of the monthly-report spec.
 
 ## How the agent works here
 
@@ -251,6 +253,28 @@ why, and what changed.
     heredoc). Both were solved by moving the text to a file, not by
     loosening the hook. That is the cost of guarding on command text
     (ADR 4): an occasional detour is cheaper than a hole.
+20. **Right numbers, wrong examples.** After entry 16, the agent
+    computed every expected value of the `monthly-report` spec with a
+    script before writing it, and the reviewer confirmed all of them.
+    It still found gaps: no expense on a 31st or on 29 February, a
+    year 0000 that the format accepted but no date can hold, and a
+    rounding example that floats also get right (6.25 is exact in
+    binary; 0.29 of 4.00 = 7.25 is not, so it was added). Lesson:
+    checking the arithmetic does not check that the examples can
+    tell a correct implementation from a plausible wrong one.
+21. **The agent's own brief was wrong.** The prompt to test-writer
+    said AC-RPT-13 had eleven values; after an edit to the spec it
+    had ten. The subagent tested the ten in the spec and reported
+    the mismatch instead of inventing an eleventh. Lesson: the spec,
+    not the brief, is the contract; and a brief written from memory
+    drifts from the file.
+22. **A pattern outlived its reason.** `conftest.py` imported
+    production modules inside each fixture, a trick that only
+    matters while a module does not exist yet. Every new fixture
+    copied it, so the same imports appeared three times. The
+    developer spotted it in review; imports moved to the top and the
+    docstring now states the one case where the trick still applies.
+    Lesson: when copying a pattern, check the reason still holds.
 
 ### Manual hook verification (phase 2)
 

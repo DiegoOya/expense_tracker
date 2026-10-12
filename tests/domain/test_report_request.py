@@ -3,9 +3,9 @@
 from datetime import date
 
 import pytest
-from expense_tracker.domain.reports import build_report_request
 
 from expense_tracker.domain.model import ExpenseValidationError
+from expense_tracker.domain.reports import build_report_request
 
 # Spec: unless stated, today = 2026-10-15.
 TODAY = date(2026, 10, 15)

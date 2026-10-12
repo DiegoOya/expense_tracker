@@ -8,9 +8,10 @@ caller keeps its own error messages; these helpers only parse.
 import datetime
 import re
 
-from expense_tracker.domain.model import CATEGORIES
+from expense_tracker.domain.model import CATEGORIES, YearMonth
 
 DATE_TEXT = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+MONTH_TEXT = re.compile(r"([0-9]{4})-(0[1-9]|1[0-2])")
 UNKNOWN_CATEGORY = "category must be one of: " + ", ".join(CATEGORIES)
 
 
@@ -33,6 +34,19 @@ def strict_date(text: str) -> datetime.date | None:
         return datetime.date.fromisoformat(text)
     except ValueError:
         return None
+
+
+def strict_month(text: str) -> YearMonth | None:
+    """The month of a strict YYYY-MM text, or None if invalid.
+
+    ASCII digits only and a month from 01 to 12, so "+2026-10",
+    "2026 -10" and full-width digits are invalid. The year is not
+    range-checked here: "0000-05" parses and the caller rejects it.
+    """
+    match = MONTH_TEXT.fullmatch(text)
+    if match is None:
+        return None
+    return YearMonth(int(match.group(1)), int(match.group(2)))
 
 
 def known_category(text: str) -> str | None:

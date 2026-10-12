@@ -104,6 +104,22 @@ class SqliteStore:
             total_count=total,
         )
 
+    def between(
+        self, first: datetime.date, last: datetime.date
+    ) -> list[Expense]:
+        """Expenses dated from `first` to `last`, both inclusive.
+
+        Ordered by date, then id. Dates are ISO text, so comparing the
+        text compares the dates; both bounds are bound parameters.
+        """
+        with self._connection() as connection:
+            rows = connection.execute(
+                f"SELECT {COLUMNS} FROM expenses"
+                " WHERE date >= ? AND date <= ? ORDER BY date, id",
+                (first.isoformat(), last.isoformat()),
+            ).fetchall()
+        return [_to_expense(row) for row in rows]
+
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self._path)
