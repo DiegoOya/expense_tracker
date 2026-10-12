@@ -40,7 +40,7 @@ Each task is one commit-sized step. Tick when done.
 - [x] T11. Spec `status: implemented`; README tool list; README
   lessons if anything went wrong. Commit `feat(monthly-report)` after
   the developer accepts.
-- [ ] T12. Manual check: `monthly_report` called from Claude Code via
+- [x] T12. Manual check: `monthly_report` called from Claude Code via
   the project's `.mcp.json` server.
 
 Coverage check: every AC-RPT-01 to 20 appears in at least one task.
