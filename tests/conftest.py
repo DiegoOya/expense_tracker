@@ -1,21 +1,23 @@
 """Shared fixtures and test doubles for the expense tracker tests.
 
-Production modules are imported inside the fixtures so that a missing
-implementation only breaks the tests that need it.
+Production code is imported at the top, like in any module. The one
+exception is a red step: a fixture that needs a module the current
+feature has not created yet imports it inside the fixture, so the
+missing module only breaks the tests that use it. Move that import up
+once the module exists.
 """
 
-from __future__ import annotations
-
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
+from mcp.server.mcpserver import MCPServer
 
-if TYPE_CHECKING:
-    from mcp.server.mcpserver import MCPServer
-
-    from expense_tracker.adapters.sqlite_store import SqliteStore
+from expense_tracker.adapters.fake_categorizer import FakeCategorizer
+from expense_tracker.adapters.sqlite_store import SqliteStore
+from expense_tracker.domain.model import CategorySource, NewExpense
+from expense_tracker.server import build_server
 
 # Fixed "today" for every test (spec: today = 2026-10-06).
 TODAY = date(2026, 10, 6)
@@ -55,16 +57,11 @@ def db_path(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def store(db_path: Path) -> SqliteStore:
-    from expense_tracker.adapters.sqlite_store import SqliteStore
-
     return SqliteStore(db_path)
 
 
 @pytest.fixture
 def server(store: SqliteStore) -> MCPServer:
-    from expense_tracker.adapters.fake_categorizer import FakeCategorizer
-    from expense_tracker.server import build_server
-
     return build_server(store, FakeCategorizer(), lambda: TODAY)
 
 
@@ -75,10 +72,6 @@ def dataset(store: SqliteStore) -> SqliteStore:
     Ids are 1 to 6. Id 6 is stored last but dated 2026-09-30, so the
     date order (5, 4, 3, 2, 6, 1) differs from the id order.
     """
-    from decimal import Decimal
-
-    from expense_tracker.domain.model import CategorySource, NewExpense
-
     rows = [
         ("2026-09-28", "750.00", "Rent for September", "housing"),
         ("2026-10-01", "3.50", "Coffee at Example Cafe", "food"),
@@ -108,10 +101,6 @@ def dataset(store: SqliteStore) -> SqliteStore:
 @pytest.fixture
 def many_expenses(store: SqliteStore) -> SqliteStore:
     """Store 201 expenses (ids 1 to 201), all dated 2026-10-01."""
-    from decimal import Decimal
-
-    from expense_tracker.domain.model import CategorySource, NewExpense
-
     for number in range(1, 202):
         store.add(
             NewExpense(
