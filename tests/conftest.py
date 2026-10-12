@@ -112,3 +112,43 @@ def many_expenses(store: SqliteStore) -> SqliteStore:
             )
         )
     return store
+
+
+@pytest.fixture
+def report_server(store: SqliteStore) -> MCPServer:
+    """Server whose clock says today is 2026-10-15 (monthly-report)."""
+    return build_server(store, FakeCategorizer(), lambda: date(2026, 10, 15))
+
+
+@pytest.fixture
+def report_dataset(store: SqliteStore) -> SqliteStore:
+    """Store the sixteen expenses of the monthly-report spec."""
+    rows = [
+        ("2024-02-29", "8.00", "Taxi to Example Airport", "transport"),
+        ("2025-10-10", "40.00", "Dinner at Example Restaurant", "food"),
+        ("2025-12-31", "25.00", "New Year dinner at Example Bistro", "food"),
+        ("2026-04-10", "0.29", "Chewing gum at Example Kiosk", "food"),
+        ("2026-04-11", "3.71", "Bus ticket to Example Town", "transport"),
+        ("2026-07-05", "1.00", "Coffee at Example Kiosk", "food"),
+        ("2026-07-20", "15.00", "Gift for Example Person", "other"),
+        ("2026-08-03", "10.00", "Pharmacy at Example Street", "health"),
+        ("2026-08-17", "10.00", "Concert at Example Hall", "leisure"),
+        ("2026-09-12", "20.00", "Lunch at Example Bistro", "food"),
+        ("2026-09-28", "750.00", "Rent for September", "housing"),
+        ("2026-09-30", "31.20", "Water bill for September", "utilities"),
+        ("2026-10-01", "3.50", "Coffee at Example Cafe", "food"),
+        ("2026-10-01", "12.80", "Train ticket to Example City", "transport"),
+        ("2026-10-03", "45.10", "Groceries at Example Market", "food"),
+        ("2026-10-05", "9.00", "Cinema at Example Plaza", "leisure"),
+    ]
+    for day, amount, description, category in rows:
+        store.add(
+            NewExpense(
+                amount=Decimal(amount),
+                description=description,
+                date=date.fromisoformat(day),
+                category=category,
+                category_source=CategorySource.USER,
+            )
+        )
+    return store

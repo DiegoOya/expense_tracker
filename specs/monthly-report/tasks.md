@@ -5,16 +5,16 @@ Each task is one commit-sized step. Tick when done.
 
 ## Red: tests (test-writer subagent, from spec + plan only)
 
-- [ ] T1. Test fixtures: the spec's 16-row dataset stored through
+- [x] T1. Test fixtures: the spec's 16-row dataset stored through
   `store.add()` and a `report_server` fixture with today =
   2026-10-15; the existing `server` fixture stays unchanged. Covers:
   none (enables all).
-- [ ] T2. Domain tests in `tests/domain/test_report_request.py`
+- [x] T2. Domain tests in `tests/domain/test_report_request.py`
   (`build_report_request`). Covers: AC-RPT-13, 14, 15, 17, 18, 19,
   20.
-- [ ] T3. MCP tests in `tests/server/test_monthly_report_tool.py`.
+- [x] T3. MCP tests in `tests/server/test_monthly_report_tool.py`.
   Covers: AC-RPT-01 to 12, 16.
-- [ ] T4. Run pytest: new tests fail only with import errors or
+- [x] T4. Run pytest: new tests fail only with import errors or
   missing behaviour; the existing 197 tests still pass. Commit
   `test(monthly-report)` after the developer accepts.
 
