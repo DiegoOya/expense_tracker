@@ -42,9 +42,14 @@ Each task is one commit-sized step. Tick when done.
 - [ ] T12. `spec-reviewer` feature review; fix findings or explain
   them.
 - [ ] T13. Spec `status: implemented`; README (setup with the `llm`
-  extra, privacy note, how to enable it); README lessons if anything
-  went wrong. Commit `feat(llm-categorizer)` after the developer
-  accepts.
+  extra, privacy note, how to enable it, and how to set up
+  credentials: `ant auth login` first, since the credential stays in
+  `~/.config/anthropic/` and reaches the stdio server without
+  environment variables; `ANTHROPIC_API_KEY` exported in the shell
+  as the alternative; never a key in the repo or in `.mcp.json`;
+  install and login commands taken from the official docs, not from
+  memory); README lessons if anything went wrong. Commit
+  `feat(llm-categorizer)` after the developer accepts.
 - [ ] T14. Manual check by the developer with a real key: the
   server started from Claude Code via `.mcp.json` with
   `EXPENSE_TRACKER_CATEGORIZER=anthropic` categorizes one expense,
