@@ -69,7 +69,7 @@ Done between T12 and T13: T13 and T14 come after T20.
 - [x] T18. Spec: a normal reply whose `text` is 5 or null joins
   AC-LLM-15 and its AC-LLM-10 sub-case (final review). Covers:
   AC-LLM-10, 15.
-- [ ] T19. Red: test-writer adds those two bodies to both tests.
+- [x] T19. Red: test-writer adds those two bodies to both tests.
   Commit `test(llm-categorizer)` after the developer accepts.
   Covers: AC-LLM-10, 15.
 - [ ] T20. Green: the answer parsing treats a non-string text as

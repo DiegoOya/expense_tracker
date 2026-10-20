@@ -14,6 +14,7 @@ from conftest import (
     answer_text,
     connection_failure,
     http_status,
+    message_with_text,
     raw_body,
     stop,
     time_out,
@@ -179,6 +180,16 @@ def test_every_part_of_the_request_timeout_is_ten_seconds(
             "llm categorizer failed: invalid answer; using keywords",
             id="body-html-page",
         ),
+        pytest.param(
+            raw_body(message_with_text(5), "application/json"),
+            "llm categorizer failed: invalid answer; using keywords",
+            id="body-text-5",
+        ),
+        pytest.param(
+            raw_body(message_with_text(None), "application/json"),
+            "llm categorizer failed: invalid answer; using keywords",
+            id="body-text-null",
+        ),
     ],
 )
 def test_failure_writes_one_stderr_line_with_the_reason(
@@ -216,6 +227,10 @@ def test_successful_answer_writes_nothing_to_stderr(
         pytest.param(b"not json", "application/json", id="not-json"),
         pytest.param(b"{}", "application/json", id="empty-object"),
         pytest.param(b"<html>proxy</html>", "text/html", id="html-page"),
+        pytest.param(message_with_text(5), "application/json", id="text-5"),
+        pytest.param(
+            message_with_text(None), "application/json", id="text-null"
+        ),
     ],
 )
 def test_success_reply_that_is_not_a_message_falls_back_to_keywords(

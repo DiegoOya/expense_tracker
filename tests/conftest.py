@@ -9,7 +9,7 @@ once the module exists.
 
 import json
 import os
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -36,8 +36,10 @@ DUMMY_CREDENTIAL = "dummy-test-credential"
 Reply = Callable[[httpx2.Request], httpx2.Response]
 
 
-def _message_reply(content: list[dict[str, str]], stop_reason: str) -> Reply:
-    body: dict[str, Any] = {
+def _message_body(
+    content: Sequence[Mapping[str, object]], stop_reason: str
+) -> dict[str, Any]:
+    return {
         "id": "msg_test",
         "type": "message",
         "role": "assistant",
@@ -47,6 +49,10 @@ def _message_reply(content: list[dict[str, str]], stop_reason: str) -> Reply:
         "content": content,
         "usage": {"input_tokens": 1, "output_tokens": 1},
     }
+
+
+def _message_reply(content: list[dict[str, str]], stop_reason: str) -> Reply:
+    body = _message_body(content, stop_reason)
 
     def reply(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(200, json=body)
@@ -89,6 +95,17 @@ def raw_body(body: bytes, content_type: str) -> Reply:
         )
 
     return reply
+
+
+def message_with_text(value: int | None) -> bytes:
+    """Raw body of a normal reply whose "text" is not a string.
+
+    The message shape of ``answer_text`` (stop_reason "end_turn",
+    one text block), but its ``"text"`` is ``value``. Send it with
+    ``raw_body`` as application/json (AC-LLM-15).
+    """
+    content: list[dict[str, object]] = [{"type": "text", "text": value}]
+    return json.dumps(_message_body(content, "end_turn")).encode()
 
 
 def http_status(code: int) -> Reply:
