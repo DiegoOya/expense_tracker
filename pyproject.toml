@@ -15,7 +15,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Opt-in LLM categorizer (specs/llm-categorizer); `pip install -e .`
+# stays without it and uses the keyword categorizer.
+llm = [
+    "anthropic>=1.15,<2",
+]
 dev = [
+    "expense-tracker[llm]",
     "pytest>=9,<10",
     "ruff>=0.16,<0.17",
     "mypy>=2,<3",

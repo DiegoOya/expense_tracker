@@ -5,20 +5,20 @@ Each task is one commit-sized step. Tick when done.
 
 ## Red: tests (test-writer subagent, from spec + plan only)
 
-- [ ] T1. `pyproject.toml`: `llm` extra and `dev` pulling it in;
+- [x] T1. `pyproject.toml`: `llm` extra and `dev` pulling it in;
   reinstall the venv, so the tests can import `anthropic` and
   `httpx2`. Covers: none (enables all).
-- [ ] T2. Test doubles in `tests/conftest.py`: `FakeAnthropicAPI`
+- [x] T2. Test doubles in `tests/conftest.py`: `FakeAnthropicAPI`
   with its reply helpers, `DUMMY_CREDENTIAL` and the `clean_env`
   fixture. Covers: none (enables all).
-- [ ] T3. Adapter tests in
+- [x] T3. Adapter tests in
   `tests/adapters/test_anthropic_categorizer.py`. Covers: AC-LLM-05,
   06, 08, 09, 10, 11.
-- [ ] T4. Startup tests in `tests/test_startup.py` (through
+- [x] T4. Startup tests in `tests/test_startup.py` (through
   `main()`). Covers: AC-LLM-12, 13, 14.
-- [ ] T5. MCP tests in `tests/server/test_llm_categorizer_tool.py`.
+- [x] T5. MCP tests in `tests/server/test_llm_categorizer_tool.py`.
   Covers: AC-LLM-01, 02, 03, 04, 07.
-- [ ] T6. Run pytest: new tests fail only with import errors or
+- [x] T6. Run pytest: new tests fail only with import errors or
   missing behaviour; the existing 242 tests still pass. Commit
   `test(llm-categorizer)` after the developer accepts.
 

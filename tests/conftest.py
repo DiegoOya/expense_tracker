@@ -7,10 +7,16 @@ missing module only breaks the tests that use it. Move that import up
 once the module exists.
 """
 
+import json
+import os
+from collections.abc import Callable, Iterator
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
+import anthropic
+import httpx2
 import pytest
 from mcp.server.mcpserver import MCPServer
 
@@ -21,6 +27,140 @@ from expense_tracker.server import build_server
 
 # Fixed "today" for every test (spec: today = 2026-10-06).
 TODAY = date(2026, 10, 6)
+
+# Fake Anthropic credential, not key-shaped so secret scanners ignore
+# it. Tests choosing the LLM set ANTHROPIC_API_KEY to it.
+DUMMY_CREDENTIAL = "dummy-test-credential"
+
+# How the simulated Anthropic API answers one request.
+Reply = Callable[[httpx2.Request], httpx2.Response]
+
+
+def _message_reply(content: list[dict[str, str]], stop_reason: str) -> Reply:
+    body: dict[str, Any] = {
+        "id": "msg_test",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-5-5",
+        "stop_reason": stop_reason,
+        "stop_sequence": None,
+        "content": content,
+        "usage": {"input_tokens": 1, "output_tokens": 1},
+    }
+
+    def reply(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json=body)
+
+    return reply
+
+
+def answer_text(text: str) -> Reply:
+    """A normal reply whose only text block is ``text``."""
+    return _message_reply([{"type": "text", "text": text}], "end_turn")
+
+
+def answer(category: str) -> Reply:
+    """The API "answers X": its text is ``{"category": "X"}``."""
+    return answer_text(json.dumps({"category": category}))
+
+
+def stop(stop_reason: str) -> Reply:
+    """A reply that stops with "refusal" or "max_tokens"."""
+    if stop_reason == "refusal":
+        return _message_reply([], "refusal")
+    if stop_reason == "max_tokens":
+        truncated = '{"category": "lei'
+        return _message_reply(
+            [{"type": "text", "text": truncated}], "max_tokens"
+        )
+    raise ValueError(f"no simulated reply for stop_reason {stop_reason!r}")
+
+
+def http_status(code: int) -> Reply:
+    """An error reply with HTTP status ``code``."""
+    body = {
+        "type": "error",
+        "error": {"type": "api_error", "message": "simulated"},
+    }
+
+    def reply(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(code, json=body)
+
+    return reply
+
+
+def time_out() -> Reply:
+    """The request times out."""
+
+    def reply(request: httpx2.Request) -> httpx2.Response:
+        raise httpx2.ReadTimeout("simulated", request=request)
+
+    return reply
+
+
+def connection_failure() -> Reply:
+    """The connection to the API fails."""
+
+    def reply(request: httpx2.Request) -> httpx2.Response:
+        raise httpx2.ConnectError("simulated", request=request)
+
+    return reply
+
+
+class FakeAnthropicAPI:
+    """Simulated Anthropic API behind the SDK's HTTP transport.
+
+    Records every request and its timeout extension; ``reply`` (set
+    per test with the helpers above) decides the answer. Nothing
+    reaches the network. Until a test sets ``reply``, every request
+    gets HTTP 500, so a forgotten reply never looks like a success.
+    """
+
+    def __init__(self) -> None:
+        self.requests: list[httpx2.Request] = []
+        self.timeouts: list[dict[str, Any]] = []
+        self.reply: Reply = http_status(500)
+        self.http_client = anthropic.DefaultHttpxClient(
+            transport=httpx2.MockTransport(self.handle)
+        )
+
+    def handle(self, request: httpx2.Request) -> httpx2.Response:
+        request.read()
+        self.requests.append(request)
+        self.timeouts.append(dict(request.extensions["timeout"]))
+        return self.reply(request)
+
+    def client(self) -> anthropic.Anthropic:
+        return anthropic.Anthropic(
+            api_key=DUMMY_CREDENTIAL, http_client=self.http_client
+        )
+
+    def body_text(self, index: int = 0) -> str:
+        """The body of the recorded request number ``index``."""
+        return self.requests[index].content.decode()
+
+
+@pytest.fixture
+def clean_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Hide the developer's Anthropic setup from the test.
+
+    Deletes every ANTHROPIC_* variable and EXPENSE_TRACKER_CATEGORIZER
+    and points HOME at an empty directory, so no real key or ant auth
+    profile can leak in. Never sets ANTHROPIC_CONFIG_DIR.
+    """
+    for name in list(os.environ):
+        if name.startswith("ANTHROPIC_"):
+            monkeypatch.delenv(name)
+    monkeypatch.delenv("EXPENSE_TRACKER_CATEGORIZER", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+
+@pytest.fixture
+def anthropic_api(clean_env: None) -> Iterator[FakeAnthropicAPI]:
+    """A simulated Anthropic API, in a clean environment."""
+    api = FakeAnthropicAPI()
+    yield api
+    api.http_client.close()
 
 
 class StubCategorizer:
