@@ -5,7 +5,8 @@
       "command": ".venv/bin/expense-tracker-mcp",
       "args": [],
       "env": {
-        "EXPENSE_TRACKER_DB": "${EXPENSE_TRACKER_DB:-data/expenses.db}"
+        "EXPENSE_TRACKER_DB": "${EXPENSE_TRACKER_DB:-data/expenses.db}",
+        "EXPENSE_TRACKER_CATEGORIZER": "${EXPENSE_TRACKER_CATEGORIZER:-keywords}"
       }
     },
     "github": {

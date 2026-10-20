@@ -9,6 +9,7 @@ exception whose message reaches the client in MCP SDK v2
 import datetime
 import inspect
 import os
+import sys
 from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
@@ -17,7 +18,6 @@ from typing import TypedDict
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from expense_tracker.adapters.fake_categorizer import FakeCategorizer
 from expense_tracker.adapters.sqlite_store import SqliteStore
 from expense_tracker.domain.categorizer import Categorizer
 from expense_tracker.domain.expenses import build_expense
@@ -30,6 +30,7 @@ from expense_tracker.domain.model import (
     YearMonth,
 )
 from expense_tracker.domain.reports import build_report, build_report_request
+from expense_tracker.startup import ConfigurationError, choose_categorizer
 
 DEFAULT_DB_PATH = "data/expenses.db"
 
@@ -252,10 +253,20 @@ def _signed(value: Decimal) -> str:
 
 
 def main() -> None:
-    """Entry point for the `expense-tracker-mcp` console script."""
+    """Entry point for the `expense-tracker-mcp` console script.
+
+    The categorizer is chosen first, so a bad configuration stops the
+    server with exit status 1 and only its message on stderr, before
+    the database or stdio are touched.
+    """
+    try:
+        categorizer = choose_categorizer(os.environ)
+    except ConfigurationError as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)
     db_path = Path(os.environ.get("EXPENSE_TRACKER_DB", DEFAULT_DB_PATH))
     db_path.parent.mkdir(parents=True, exist_ok=True)
     server = build_server(
-        SqliteStore(db_path), FakeCategorizer(), datetime.date.today
+        SqliteStore(db_path), categorizer, datetime.date.today
     )
     server.run(transport="stdio")

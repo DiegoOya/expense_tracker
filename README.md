@@ -34,6 +34,47 @@ fine-grained token; without it, it simply does not connect.
 Next: comparing a month with the average of the last X months, as a
 second iteration of the monthly-report spec.
 
+## Optional: categorize with Claude
+
+By default `add_expense` suggests a category from a few keywords
+("train" -> `transport`), so most descriptions end up as `other`.
+The [llm-categorizer](specs/llm-categorizer/spec.md) feature asks
+Claude (`claude-haiku-5-5`) instead. It is opt-in
+([ADR 5](docs/adr/0005-opt-in-llm-categorizer.md)):
+
+- **What leaves your machine**: only the expense description and the
+  category list, sent to the Anthropic API. Never amount or date.
+- **When it fails** (timeout after 10 s, HTTP error, refusal, an
+  answer outside the list), the keywords decide and the server writes
+  one line to stderr. `add_expense` never fails because of it.
+
+1. Install the SDK (the `dev` extra already includes it):
+   `.venv/bin/pip install -e ".[llm]"`.
+2. Give the server Anthropic credentials, outside the repository:
+   - **`ant auth login`** (recommended). Install the `ant` CLI from
+     [anthropics/anthropic-cli](https://github.com/anthropics/anthropic-cli/releases)
+     (macOS: `brew install anthropics/tap/ant`; with Go 1.25+:
+     `go install github.com/anthropics/anthropic-cli/cmd/ant@latest`),
+     then run `ant auth login` and check with `ant auth status`. The
+     credential is a profile in `~/.config/anthropic/`; the SDK finds
+     it without any environment variable. A profile is ignored while
+     `ANTHROPIC_API_KEY` is set, and Claude Code may warn about an
+     auth conflict with its own login: keep one of the two.
+   - **`ANTHROPIC_API_KEY`** exported in the shell that starts the
+     server, read from a password manager or keyring. Claude Code
+     itself also uses this variable when it is set.
+   - Never put a key in the repository, in `.env` (nothing loads it)
+     or in `.mcp.json`.
+3. Start the server (or Claude Code) with
+   `EXPENSE_TRACKER_CATEGORIZER=anthropic`. `.mcp.json` passes it
+   through and defaults to `keywords`.
+
+With a bad configuration the server does not start: it exits with
+status 1 and one message on stderr (unknown value, `llm` extra not
+installed, or no credentials found). A key that exists but is wrong
+is only noticed per request, as keyword categories plus a stderr
+line.
+
 ## How the agent works here
 
 ```mermaid
@@ -101,7 +142,8 @@ enforced by `tests/test_domain_purity.py`.
 ```
 src/expense_tracker/
   domain/     pure rules; Categorizer protocol (the only port)
-  adapters/   SQLite storage, fake categorizer
+  adapters/   SQLite storage; keyword and Claude categorizers
+  startup.py  picks the categorizer from the environment
   server.py   MCP tools: parse input -> domain -> storage -> output
 ```
 
@@ -275,6 +317,36 @@ why, and what changed.
     developer spotted it in review; imports moved to the top and the
     docstring now states the one case where the trick still applies.
     Lesson: when copying a pattern, check the reason still holds.
+23. **The agent started a phase nobody launched.** Asked to "continue
+    with the categorizer", the agent asked the scope questions (good)
+    and then wrote the spec on its own (bad): the workflow starts
+    when the developer runs `/add-mcp-tool`. The developer deleted
+    the file and launched the skill. The rule now lives in the
+    agent's memory. Lesson: a question about the next feature is not
+    the start of the next feature.
+24. **Library defaults are requirements too.** The first
+    llm-categorizer spec said "no retries" but only listed HTTP
+    errors; the Anthropic SDK also retries timeouts by default, so an
+    implementation could keep those retries and pass. The reviewer
+    found it, plus an undefined answer format and a timeout no test
+    could observe. Before the plan, the agent probed the SDK in a
+    throwaway venv (timeout per request, retry rules, error classes,
+    what "no credentials" looks like) instead of trusting memory, so
+    the plan's contract was checked before test-writer coded against
+    it. Lesson: when a dependency has defaults, the spec has to name
+    the cases where the defaults would bite.
+25. **A rule with no criterion is not tested.** The spec said
+    "`add_expense` never fails because of the LLM", and all 305 tests
+    passed, but every failure listed in the criteria was an error
+    reply or a bad answer text. The feature review tried a success
+    reply whose body is not a message (`not json`, `{}`, a proxy's
+    HTML page): the SDK raised, the port broke its "never raises"
+    contract and `add_expense` failed. The developer chose to amend
+    the spec (AC-LLM-15) and go through red and green again, not to
+    patch the code quietly. The final review found one more (an
+    answer text that is a number or null) and the same round was
+    repeated. Lesson: every promise in a spec's prose needs a
+    criterion that would break it.
 
 ### Manual hook verification (phase 2)
 

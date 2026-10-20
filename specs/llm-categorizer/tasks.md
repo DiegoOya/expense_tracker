@@ -41,7 +41,7 @@ Each task is one commit-sized step. Tick when done.
 
 - [x] T12. `spec-reviewer` feature review; fix findings or explain
   them.
-- [ ] T13. Spec `status: implemented`; README (setup with the `llm`
+- [x] T13. Spec `status: implemented`; README (setup with the `llm`
   extra, privacy note, how to enable it, and how to set up
   credentials: `ant auth login` first, since the credential stays in
   `~/.config/anthropic/` and reaches the stdio server without
@@ -72,7 +72,7 @@ Done between T12 and T13: T13 and T14 come after T20.
 - [x] T19. Red: test-writer adds those two bodies to both tests.
   Commit `test(llm-categorizer)` after the developer accepts.
   Covers: AC-LLM-10, 15.
-- [ ] T20. Green: the answer parsing treats a non-string text as
+- [x] T20. Green: the answer parsing treats a non-string text as
   `invalid answer`. Covers: AC-LLM-10, 15.
 
 Coverage check: every AC-LLM-01 to 15 appears in at least one task.
