@@ -30,7 +30,8 @@ without any key.
   JSON object `{"category": "<name>"}`, and the name must equal one of
   the 8 categories exactly; `other` is a valid answer.
 - If the LLM fails (timeout, network error, any HTTP error, refusal,
-  stop at max_tokens, unparseable answer, name outside the list), the
+  stop at max_tokens, unparseable answer, name outside the list, a
+  success reply whose body is not a message), the
   keyword categorizer decides, then the usual fallback `other`
   applies. `add_expense` never fails because of the LLM. Each failure
   writes one stderr line `llm categorizer failed: <reason>; using
@@ -44,15 +45,17 @@ the SDK client that records each request (body and timeout) and
 replies as the criterion says, or raises a timeout or connection
 error. "Answers X" means a normal reply whose text is
 `{"category": "X"}`; "replies with HTTP status N" means an error
-reply. No network or real key: tests remove the developer's
-`ANTHROPIC_*` variables and use an empty `ant auth` config location;
-where the LLM categorizer is chosen they set ANTHROPIC_API_KEY to a
-dummy value. The dev setup installs the SDK. "Startup" is the
-server's startup routine run with the given environment; criteria
-through an MCP client use the categorizer it chose. With keywords,
-"Train ticket to Example City" is `transport` and "Gift for Example
-Person" matches nothing. Messages are exact. Every listed example
-value or sub-case must be tested.
+reply; "a success reply whose raw body is B" means HTTP 200 with
+exactly the bytes B and the stated content type. No network or real
+key: tests remove the developer's `ANTHROPIC_*` variables and use an
+empty `ant auth` config location; where the LLM categorizer is
+chosen they set ANTHROPIC_API_KEY to a dummy value. The dev setup
+installs the SDK. "Startup" is the server's startup routine run with
+the given environment; criteria through an MCP client use the
+categorizer it chose. With keywords, "Train ticket to Example City"
+is `transport` and "Gift for Example Person" matches nothing.
+Messages are exact. Every listed example value or sub-case must be
+tested.
 
 ## Acceptance criteria
 
@@ -110,8 +113,10 @@ value or sub-case must be tested.
     keywords".
   - stop_reason "max_tokens": "llm categorizer failed: max_tokens;
     using keywords".
-  - answer "pets", text that is not JSON, or JSON without "category":
-    "llm categorizer failed: invalid answer; using keywords".
+  - answer "pets", text that is not JSON, JSON without "category", or
+    an HTTP 200 body that is not a message (the three bodies of
+    AC-LLM-15): "llm categorizer failed: invalid answer; using
+    keywords".
 - **AC-LLM-11** Given the API answers "leisure", when the LLM
   categorizer suggests for "Train ticket to Example City", then
   nothing is written to stderr.
@@ -130,6 +135,12 @@ value or sub-case must be tested.
   then it exits with status 1 and stderr is
   "EXPENSE_TRACKER_CATEGORIZER=anthropic needs Anthropic credentials
   (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN or an ant auth profile)".
+- **AC-LLM-15** Given the API sends a success reply whose raw body is
+  not a message: the text `not json` (content type
+  application/json), the JSON object `{}` (content type
+  application/json), or the page `<html>proxy</html>` (content type
+  text/html), when the LLM categorizer suggests for "Train ticket to
+  Example City", then the suggestion is "transport".
 
 ## Out of scope
 
@@ -146,4 +157,8 @@ None. Resolved with the developer on 2026-10-19: model Claude Haiku
 5.5, opt-in through EXPENSE_TRACKER_CATEGORIZER, keywords then
 `other` when the LLM fails, `category_source` unchanged, startup
 errors for a bad configuration, 10 s and no retries, "other" from the
-LLM is kept, and one stderr line per failure.
+LLM is kept, and one stderr line per failure. Added on 2026-10-20,
+after the feature review found that a malformed success reply made
+`add_expense` fail: AC-LLM-15 and its AC-LLM-10 sub-case. AC-LLM-15
+has the same outcome as AC-LLM-06 but keeps its own ID, at the
+developer's request, to record the amendment.

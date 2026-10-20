@@ -60,6 +60,14 @@ class AnthropicCategorizer:
   `json.loads`; a dict whose `category` is in `CATEGORIES` is
   returned as is (including "other"); anything else -> `invalid
   answer`. `anthropic.APIError` -> reason `type(error).__name__`.
+  AC-LLM-15 (added after the feature review): a 200 reply whose body
+  is not a message makes the SDK or the parsing raise
+  `JSONDecodeError` (a `ValueError`), `TypeError` or
+  `AttributeError` (checked on 2026-10-20 with bodies `not json`,
+  `{}` and an HTML page); those three -> `invalid answer`. The
+  `JSONDecodeError` comes from inside `messages.create`, so the
+  `except` covers the call and the result handling, not only the
+  `json.loads` of the answer text.
 - On a failure: `print("llm categorizer failed: <reason>; using
   keywords", file=sys.stderr)` (looked up at call time, so `capsys`
   sees it; never stdout, which carries the MCP protocol), then
@@ -147,7 +155,9 @@ directory and run the server with the chosen categorizer.
   "error", "error": {"type": "api_error", "message": "simulated"}}`;
   timeout -> `raise httpx2.ReadTimeout("simulated", request=r)`;
   connection failure -> `raise httpx2.ConnectError("simulated",
-  request=r)`.
+  request=r)`; a 200 reply with a raw body (AC-LLM-15) ->
+  `httpx2.Response(200, content=<bytes>, headers={"content-type":
+  <type>})`.
 - `DUMMY_CREDENTIAL = "dummy-test-credential"` (not key-shaped, so
   gitleaks stays quiet).
 - `clean_env` fixture: deletes every `ANTHROPIC_*` variable and

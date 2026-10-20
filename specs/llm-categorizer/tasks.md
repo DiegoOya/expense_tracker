@@ -24,17 +24,17 @@ Each task is one commit-sized step. Tick when done.
 
 ## Green: implementation
 
-- [ ] T7. `adapters/anthropic_categorizer.py`: request, answer
+- [x] T7. `adapters/anthropic_categorizer.py`: request, answer
   parsing, failure reasons, stderr line, keyword fallback. Covers:
   AC-LLM-05, 06, 08, 09, 10, 11.
-- [ ] T8. `startup.py`: `choose_categorizer`, `ConfigurationError`
+- [x] T8. `startup.py`: `choose_categorizer`, `ConfigurationError`
   and the three messages. Covers: AC-LLM-01, 02, 12, 13, 14.
-- [ ] T9. `server.py` `main()`: choose the categorizer first, exit 1
+- [x] T9. `server.py` `main()`: choose the categorizer first, exit 1
   with the message on `ConfigurationError`. Covers: AC-LLM-12, 13,
   14; AC-LLM-03, 04, 07 through the wiring.
-- [ ] T10. `.mcp.json` variable with `keywords` default; ADR 0005.
+- [x] T10. `.mcp.json` variable with `keywords` default; ADR 0005.
   Covers: none (configuration and decision record).
-- [ ] T11. Definition of done: ruff, mypy, pytest, check_specs;
+- [x] T11. Definition of done: ruff, mypy, pytest, check_specs;
   domain purity test still green.
 
 ## Review and close
@@ -55,4 +55,16 @@ Each task is one commit-sized step. Tick when done.
   `EXPENSE_TRACKER_CATEGORIZER=anthropic` categorizes one expense,
   and the key reaches the server process (plan risk).
 
-Coverage check: every AC-LLM-01 to 14 appears in at least one task.
+## Amendment after the feature review (T12)
+
+Done between T12 and T13: T13 and T14 come after T17.
+
+- [x] T15. Spec: AC-LLM-15 and its AC-LLM-10 sub-case (a 200 reply
+  whose body is not a message). Covers: AC-LLM-10, 15.
+- [ ] T16. Red: test-writer adds the tests for AC-LLM-15 and the new
+  AC-LLM-10 sub-case. Commit `test(llm-categorizer)` after the
+  developer accepts. Covers: AC-LLM-10, 15.
+- [ ] T17. Green: the adapter treats those replies as `invalid
+  answer`. Covers: AC-LLM-10, 15.
+
+Coverage check: every AC-LLM-01 to 15 appears in at least one task.
