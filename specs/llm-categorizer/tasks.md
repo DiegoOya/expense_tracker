@@ -39,7 +39,7 @@ Each task is one commit-sized step. Tick when done.
 
 ## Review and close
 
-- [ ] T12. `spec-reviewer` feature review; fix findings or explain
+- [x] T12. `spec-reviewer` feature review; fix findings or explain
   them.
 - [ ] T13. Spec `status: implemented`; README (setup with the `llm`
   extra, privacy note, how to enable it, and how to set up
@@ -57,14 +57,22 @@ Each task is one commit-sized step. Tick when done.
 
 ## Amendment after the feature review (T12)
 
-Done between T12 and T13: T13 and T14 come after T17.
+Done between T12 and T13: T13 and T14 come after T20.
 
 - [x] T15. Spec: AC-LLM-15 and its AC-LLM-10 sub-case (a 200 reply
   whose body is not a message). Covers: AC-LLM-10, 15.
 - [x] T16. Red: test-writer adds the tests for AC-LLM-15 and the new
   AC-LLM-10 sub-case. Commit `test(llm-categorizer)` after the
   developer accepts. Covers: AC-LLM-10, 15.
-- [ ] T17. Green: the adapter treats those replies as `invalid
+- [x] T17. Green: the adapter treats those replies as `invalid
   answer`. Covers: AC-LLM-10, 15.
+- [x] T18. Spec: a normal reply whose `text` is 5 or null joins
+  AC-LLM-15 and its AC-LLM-10 sub-case (final review). Covers:
+  AC-LLM-10, 15.
+- [ ] T19. Red: test-writer adds those two bodies to both tests.
+  Commit `test(llm-categorizer)` after the developer accepts.
+  Covers: AC-LLM-10, 15.
+- [ ] T20. Green: the answer parsing treats a non-string text as
+  `invalid answer`. Covers: AC-LLM-10, 15.
 
 Coverage check: every AC-LLM-01 to 15 appears in at least one task.

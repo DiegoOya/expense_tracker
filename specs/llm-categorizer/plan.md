@@ -66,8 +66,10 @@ class AnthropicCategorizer:
   `AttributeError` (checked on 2026-10-20 with bodies `not json`,
   `{}` and an HTML page); those three -> `invalid answer`. The
   `JSONDecodeError` comes from inside `messages.create`, so the
-  `except` covers the call and the result handling, not only the
-  `json.loads` of the answer text.
+  `except` covers the call and reading `stop_reason` and the text.
+  The answer parsing also treats a text that is not a string (`5`,
+  `null`; final review) as `invalid answer` instead of letting
+  `json.loads` raise `TypeError`.
 - On a failure: `print("llm categorizer failed: <reason>; using
   keywords", file=sys.stderr)` (looked up at call time, so `capsys`
   sees it; never stdout, which carries the MCP protocol), then

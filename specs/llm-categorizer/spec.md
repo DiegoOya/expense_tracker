@@ -1,5 +1,5 @@
 ---
-status: planned
+status: implemented
 ---
 
 # LLM categorizer
@@ -114,7 +114,7 @@ tested.
   - stop_reason "max_tokens": "llm categorizer failed: max_tokens;
     using keywords".
   - answer "pets", text that is not JSON, JSON without "category", or
-    an HTTP 200 body that is not a message (the three bodies of
+    an HTTP 200 body that is not a message (the five bodies of
     AC-LLM-15): "llm categorizer failed: invalid answer; using
     keywords".
 - **AC-LLM-11** Given the API answers "leisure", when the LLM
@@ -138,9 +138,11 @@ tested.
 - **AC-LLM-15** Given the API sends a success reply whose raw body is
   not a message: the text `not json` (content type
   application/json), the JSON object `{}` (content type
-  application/json), or the page `<html>proxy</html>` (content type
-  text/html), when the LLM categorizer suggests for "Train ticket to
-  Example City", then the suggestion is "transport".
+  application/json), the page `<html>proxy</html>` (content type
+  text/html), or a normal reply whose text block has `"text": 5` or
+  `"text": null` instead of a string, when the LLM categorizer
+  suggests for "Train ticket to Example City", then the suggestion is
+  "transport".
 
 ## Out of scope
 
@@ -161,4 +163,6 @@ LLM is kept, and one stderr line per failure. Added on 2026-10-20,
 after the feature review found that a malformed success reply made
 `add_expense` fail: AC-LLM-15 and its AC-LLM-10 sub-case. AC-LLM-15
 has the same outcome as AC-LLM-06 but keeps its own ID, at the
-developer's request, to record the amendment.
+developer's request, to record the amendment. The non-string `text`
+examples were added the same day after the final review found they
+still made `add_expense` fail.
