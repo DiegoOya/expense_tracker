@@ -19,13 +19,13 @@ from conftest import (
     answer,
     http_status,
 )
-from expense_tracker.startup import choose_categorizer
 from mcp import Client
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult
 
 from expense_tracker.adapters.sqlite_store import SqliteStore
 from expense_tracker.server import build_server
+from expense_tracker.startup import choose_categorizer
 
 TRAIN: dict[str, Any] = {
     "amount": "12.80",

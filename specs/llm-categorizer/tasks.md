@@ -61,7 +61,7 @@ Done between T12 and T13: T13 and T14 come after T17.
 
 - [x] T15. Spec: AC-LLM-15 and its AC-LLM-10 sub-case (a 200 reply
   whose body is not a message). Covers: AC-LLM-10, 15.
-- [ ] T16. Red: test-writer adds the tests for AC-LLM-15 and the new
+- [x] T16. Red: test-writer adds the tests for AC-LLM-15 and the new
   AC-LLM-10 sub-case. Commit `test(llm-categorizer)` after the
   developer accepts. Covers: AC-LLM-10, 15.
 - [ ] T17. Green: the adapter treats those replies as `invalid

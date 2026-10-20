@@ -76,6 +76,21 @@ def stop(stop_reason: str) -> Reply:
     raise ValueError(f"no simulated reply for stop_reason {stop_reason!r}")
 
 
+def raw_body(body: bytes, content_type: str) -> Reply:
+    """A success reply whose raw body is exactly ``body``.
+
+    HTTP 200 with the given bytes and content type, whether or not
+    they form a message (AC-LLM-15).
+    """
+
+    def reply(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
+            200, content=body, headers={"content-type": content_type}
+        )
+
+    return reply
+
+
 def http_status(code: int) -> Reply:
     """An error reply with HTTP status ``code``."""
     body = {

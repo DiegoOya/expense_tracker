@@ -14,13 +14,14 @@ from conftest import (
     answer_text,
     connection_failure,
     http_status,
+    raw_body,
     stop,
     time_out,
 )
+
 from expense_tracker.adapters.anthropic_categorizer import (
     AnthropicCategorizer,
 )
-
 from expense_tracker.adapters.fake_categorizer import FakeCategorizer
 
 DESCRIPTION = "Train ticket to Example City"
@@ -163,6 +164,21 @@ def test_every_part_of_the_request_timeout_is_ten_seconds(
             "llm categorizer failed: invalid answer; using keywords",
             id="json-without-category",
         ),
+        pytest.param(
+            raw_body(b"not json", "application/json"),
+            "llm categorizer failed: invalid answer; using keywords",
+            id="body-not-json",
+        ),
+        pytest.param(
+            raw_body(b"{}", "application/json"),
+            "llm categorizer failed: invalid answer; using keywords",
+            id="body-empty-object",
+        ),
+        pytest.param(
+            raw_body(b"<html>proxy</html>", "text/html"),
+            "llm categorizer failed: invalid answer; using keywords",
+            id="body-html-page",
+        ),
     ],
 )
 def test_failure_writes_one_stderr_line_with_the_reason(
@@ -191,3 +207,20 @@ def test_successful_answer_writes_nothing_to_stderr(
     assert suggest(anthropic_api) == "leisure"
 
     assert capsys.readouterr().err == ""
+
+
+@pytest.mark.spec("AC-LLM-15")
+@pytest.mark.parametrize(
+    ("body", "content_type"),
+    [
+        pytest.param(b"not json", "application/json", id="not-json"),
+        pytest.param(b"{}", "application/json", id="empty-object"),
+        pytest.param(b"<html>proxy</html>", "text/html", id="html-page"),
+    ],
+)
+def test_success_reply_that_is_not_a_message_falls_back_to_keywords(
+    anthropic_api: FakeAnthropicAPI, body: bytes, content_type: str
+) -> None:
+    anthropic_api.reply = raw_body(body, content_type)
+
+    assert suggest(anthropic_api) == "transport"
