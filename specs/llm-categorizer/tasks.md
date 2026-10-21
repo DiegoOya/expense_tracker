@@ -54,6 +54,15 @@ Each task is one commit-sized step. Tick when done.
   server started from Claude Code via `.mcp.json` with
   `EXPENSE_TRACKER_CATEGORIZER=anthropic` categorizes one expense,
   and the key reaches the server process (plan risk).
+  Partial, 2026-10-21 (the developer's account had no credits): with
+  EXPENSE_TRACKER_CATEGORIZER=anthropic the server started from
+  Claude Code (credentials found), add_expense "Sandwich at Example
+  Bakery" stored "other"/"auto" without error, and the same request
+  from the shell got a real HTTP 400 "credit balance is too low"
+  (stderr: "llm categorizer failed: BadRequestError; using
+  keywords"). Still open: a successful answer from the real API,
+  which also proves Haiku 5.5 accepts the request's parameters (the
+  credit check may run before parameter validation).
 
 ## Amendment after the feature review (T12)
 

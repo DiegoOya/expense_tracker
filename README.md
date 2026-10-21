@@ -75,6 +75,12 @@ installed, or no credentials found). A key that exists but is wrong
 is only noticed per request, as keyword categories plus a stderr
 line.
 
+Checked by hand from Claude Code with a real account: the credential
+reaches the server and a real API error falls back to keywords. Not
+yet checked: a successful answer from the real API (the account had
+no credits; task T14 in the
+[tasks](specs/llm-categorizer/tasks.md)).
+
 ## How the agent works here
 
 ```mermaid
@@ -347,6 +353,14 @@ why, and what changed.
     answer text that is a number or null) and the same round was
     repeated. Lesson: every promise in a spec's prose needs a
     criterion that would break it.
+26. **A safe log line can hide the cause.** In the manual check the
+    stderr line said `BadRequestError`: a 400 can mean no credits or
+    a request the model rejects, and the line, built to never leak
+    data, cannot tell them apart. A one-off script printing the API's
+    error message showed it was the credit balance. Lesson: decide
+    up front which diagnostic detail is safe to log (here, the API's
+    error type and message), instead of discovering the gap during a
+    live check.
 
 ### Manual hook verification (phase 2)
 
