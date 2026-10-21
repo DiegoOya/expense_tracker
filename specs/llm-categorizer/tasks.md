@@ -50,7 +50,7 @@ Each task is one commit-sized step. Tick when done.
   install and login commands taken from the official docs, not from
   memory); README lessons if anything went wrong. Commit
   `feat(llm-categorizer)` after the developer accepts.
-- [ ] T14. Manual check by the developer with a real key: the
+- [x] T14. Manual check by the developer with a real key: the
   server started from Claude Code via `.mcp.json` with
   `EXPENSE_TRACKER_CATEGORIZER=anthropic` categorizes one expense,
   and the key reaches the server process (plan risk).
@@ -60,9 +60,10 @@ Each task is one commit-sized step. Tick when done.
   Bakery" stored "other"/"auto" without error, and the same request
   from the shell got a real HTTP 400 "credit balance is too low"
   (stderr: "llm categorizer failed: BadRequestError; using
-  keywords"). Still open: a successful answer from the real API,
-  which also proves Haiku 5.5 accepts the request's parameters (the
-  credit check may run before parameter validation).
+  keywords"). Completed the same day with credits: add_expense
+  "Sandwich at Example Bakery" from Claude Code stored "food"/"auto"
+  (keywords give "other"), so the real API accepts the request and
+  answers with a valid category.
 
 ## Amendment after the feature review (T12)
 

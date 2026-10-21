@@ -75,11 +75,10 @@ installed, or no credentials found). A key that exists but is wrong
 is only noticed per request, as keyword categories plus a stderr
 line.
 
-Checked by hand from Claude Code with a real account: the credential
-reaches the server and a real API error falls back to keywords. Not
-yet checked: a successful answer from the real API (the account had
-no credits; task T14 in the
-[tasks](specs/llm-categorizer/tasks.md)).
+Checked by hand from Claude Code with a real account (task T14 in the
+[tasks](specs/llm-categorizer/tasks.md)): without credits, a real API
+error fell back to keywords; with credits, "Sandwich at Example
+Bakery" was stored as `food` (keywords alone give `other`).
 
 ## How the agent works here
 
