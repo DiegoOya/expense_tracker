@@ -110,3 +110,77 @@ def test_month_before_1900_01_is_rejected(month: str) -> None:
 @pytest.mark.spec("AC-RPT-20")
 def test_compare_to_before_1900_01_is_rejected() -> None:
     assert_rejected(COMPARE_BEFORE_ERROR, compare_to="1899-12")
+
+
+# avg-month-comparison: the average_of input rules.
+
+AVERAGE_NOT_INTEGER_ERROR = "average_of must be an integer"
+AVERAGE_RANGE_ERROR = "average_of must be between 2 and 12"
+AVERAGE_BEFORE_ERROR = "average_of cannot reach before 1900-01"
+
+
+def assert_average_rejected(
+    message: str,
+    *,
+    average_of: int | float | str | bool | None,
+    month: str | None = None,
+    compare_to: str | None = None,
+) -> None:
+    """build_report_request must fail with exactly `message`."""
+    with pytest.raises(ExpenseValidationError) as excinfo:
+        build_report_request(
+            month=month,
+            compare_to=compare_to,
+            average_of=average_of,
+            today=TODAY,
+        )
+    assert str(excinfo.value) == message
+
+
+@pytest.mark.spec("AC-AVG-09")
+@pytest.mark.parametrize("average_of", [0, 1, 13, -2])
+def test_average_of_outside_2_to_12_is_rejected(average_of: int) -> None:
+    assert_average_rejected(AVERAGE_RANGE_ERROR, average_of=average_of)
+
+
+@pytest.mark.spec("AC-AVG-10")
+@pytest.mark.parametrize(
+    ("month", "average_of"),
+    [("1900-03", 3), ("1900-12", 12)],
+    ids=["march-1900-three-months", "december-1900-twelve-months"],
+)
+def test_average_window_before_1900_01_is_rejected(
+    month: str, average_of: int
+) -> None:
+    assert_average_rejected(
+        AVERAGE_BEFORE_ERROR, average_of=average_of, month=month
+    )
+
+
+@pytest.mark.spec("AC-AVG-11")
+@pytest.mark.parametrize(
+    ("month", "compare_to", "average_of", "message"),
+    [
+        ("2026-13", None, 1, MONTH_FORMAT_ERROR),
+        (None, "abc", 1, COMPARE_FORMAT_ERROR),
+        ("1900-01", None, 2, COMPARE_REQUIRED_ERROR),
+        ("1900-03", None, 13, AVERAGE_RANGE_ERROR),
+        (None, None, 13.5, AVERAGE_NOT_INTEGER_ERROR),
+    ],
+    ids=[
+        "month-format-before-average",
+        "compare-format-before-average",
+        "compare-required-before-average",
+        "range-before-window",
+        "integer-before-range",
+    ],
+)
+def test_only_the_first_average_failure_in_order_is_reported(
+    month: str | None,
+    compare_to: str | None,
+    average_of: int | float,
+    message: str,
+) -> None:
+    assert_average_rejected(
+        message, average_of=average_of, month=month, compare_to=compare_to
+    )

@@ -5,15 +5,15 @@ Each task is one commit-sized step. Tick when done.
 
 ## Red: tests (test-writer subagent, from spec + plan only)
 
-- [ ] T1. AC-AVG-12's two-row database (fixture or test-local setup
+- [x] T1. AC-AVG-12's two-row database (fixture or test-local setup
   through `store.add()`), served by `report_server`. Covers: none
   (enables AC-AVG-12).
-- [ ] T2. Domain tests in `tests/domain/test_report_request.py`
+- [x] T2. Domain tests in `tests/domain/test_report_request.py`
   (`build_report_request` with `average_of`). Covers: AC-AVG-09, 10,
   11.
-- [ ] T3. MCP tests in `tests/server/test_average_comparison.py`.
+- [x] T3. MCP tests in `tests/server/test_average_comparison.py`.
   Covers: AC-AVG-01 to 08, 12, 13.
-- [ ] T4. Run pytest: new tests fail only with missing behaviour (or
+- [x] T4. Run pytest: new tests fail only with missing behaviour (or
   an unexpected keyword argument); the existing 315 tests still
   pass. Commit `test(avg-month-comparison)` after the developer
   accepts.

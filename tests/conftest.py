@@ -324,3 +324,26 @@ def report_dataset(store: SqliteStore) -> SqliteStore:
             )
         )
     return store
+
+
+@pytest.fixture
+def rounding_dataset(store: SqliteStore) -> SqliteStore:
+    """Store the two expenses of AC-AVG-12 (avg-month-comparison).
+
+    0.29 food on 2026-08-01 and 1.00 food on 2026-09-01: nothing else.
+    """
+    rows = [
+        ("2026-08-01", "0.29", "Chewing gum at Example Kiosk"),
+        ("2026-09-01", "1.00", "Coffee at Example Cafe"),
+    ]
+    for day, amount, description in rows:
+        store.add(
+            NewExpense(
+                amount=Decimal(amount),
+                description=description,
+                date=date.fromisoformat(day),
+                category="food",
+                category_source=CategorySource.USER,
+            )
+        )
+    return store
