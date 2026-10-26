@@ -11,9 +11,10 @@ import inspect
 import os
 import sys
 from collections.abc import Callable
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -24,12 +25,17 @@ from expense_tracker.domain.expenses import build_expense
 from expense_tracker.domain.filters import build_filter
 from expense_tracker.domain.model import (
     CURRENCY,
+    AverageComparison,
     Expense,
     ExpenseValidationError,
     MonthlyReport,
     YearMonth,
 )
-from expense_tracker.domain.reports import build_report, build_report_request
+from expense_tracker.domain.reports import (
+    build_average,
+    build_report,
+    build_report_request,
+)
 from expense_tracker.startup import ConfigurationError, choose_categorizer
 
 DEFAULT_DB_PATH = "data/expenses.db"
@@ -80,6 +86,17 @@ class ComparisonOut(TypedDict):
     categories: list[CategoryDifferenceOut]
 
 
+class AverageOut(TypedDict):
+    """The average of the months before the report month."""
+
+    months: int
+    first_month: str
+    last_month: str
+    total: str
+    difference: str
+    categories: list[CategoryDifferenceOut]
+
+
 class MonthlyReportOut(TypedDict):
     """Structured output of a monthly report."""
 
@@ -89,6 +106,7 @@ class MonthlyReportOut(TypedDict):
     count: int
     categories: list[CategoryShareOut]
     comparison: ComparisonOut
+    average: NotRequired[AverageOut]  # only when average_of is given
 
 
 def build_server(
@@ -160,6 +178,7 @@ def build_server(
     def monthly_report(
         month: str | None = None,
         compare_to: str | None = None,
+        average_of: int | float | str | bool | None = None,
     ) -> MonthlyReportOut:
         """Summarise one month of expenses and compare it with another.
 
@@ -167,23 +186,38 @@ def build_server(
         the current month.
         compare_to: YYYY-MM, the month to compare with; defaults to the
         month before `month`.
+        average_of: integer from 2 to 12; also compare with the average
+        of that many months right before `month`. Optional.
         Returns the month's total and number of expenses, the total,
         count and percentage of each category, and the differences with
         the compared month ("+" more, "-" less), overall and per
-        category.
+        category. With average_of, an `average` object with the same
+        kind of differences against the average month.
         """
         try:
             request = build_report_request(
-                month=month, compare_to=compare_to, today=today()
+                month=month,
+                compare_to=compare_to,
+                average_of=average_of,
+                today=today(),
             )
         except ExpenseValidationError as error:
             raise ToolError(str(error)) from error
+        month_expenses = _month_expenses(store, request.month)
         report = build_report(
             request.month,
-            _month_expenses(store, request.month),
+            month_expenses,
             request.compare_to,
             _month_expenses(store, request.compare_to),
         )
+        if request.average_of is not None:
+            average = build_average(
+                month_expenses,
+                _window_expenses(store, request.month, request.average_of),
+                month=request.month,
+                months=request.average_of,
+            )
+            report = replace(report, average=average)
         return _to_report_output(report)
 
     # The SDK sends __doc__ verbatim, indentation included; getdoc()
@@ -209,9 +243,17 @@ def _month_expenses(store: SqliteStore, month: YearMonth) -> list[Expense]:
     return store.between(month.first_day(), month.last_day())
 
 
+def _window_expenses(
+    store: SqliteStore, month: YearMonth, months: int
+) -> list[Expense]:
+    """The expenses of the `months` months right before `month`."""
+    first = month.months_before(months)
+    return store.between(first.first_day(), month.previous().last_day())
+
+
 def _to_report_output(report: MonthlyReport) -> MonthlyReportOut:
     comparison = report.comparison
-    return MonthlyReportOut(
+    output = MonthlyReportOut(
         month=str(report.month),
         currency=CURRENCY,
         total=str(report.total),
@@ -238,6 +280,27 @@ def _to_report_output(report: MonthlyReport) -> MonthlyReportOut:
                 for item in comparison.categories
             ],
         ),
+    )
+    if report.average is not None:
+        output["average"] = _to_average_output(report.average)
+    return output
+
+
+def _to_average_output(average: AverageComparison) -> AverageOut:
+    return AverageOut(
+        months=average.months,
+        first_month=str(average.first_month),
+        last_month=str(average.last_month),
+        total=str(average.total),
+        difference=_signed(average.difference),
+        categories=[
+            CategoryDifferenceOut(
+                category=item.category,
+                total=str(item.total),
+                difference=_signed(item.difference),
+            )
+            for item in average.categories
+        ],
     )
 
 

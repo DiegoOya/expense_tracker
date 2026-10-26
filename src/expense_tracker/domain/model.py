@@ -22,6 +22,8 @@ MAX_AMOUNT = Decimal("1000000.00")
 MAX_DESCRIPTION_LENGTH = 200
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
+MIN_AVERAGE_MONTHS = 2
+MAX_AVERAGE_MONTHS = 12
 
 
 class CategorySource(StrEnum):
@@ -102,6 +104,15 @@ class YearMonth:
             return YearMonth(self.year - 1, 12)
         return YearMonth(self.year, self.month - 1)
 
+    def months_before(self, count: int) -> "YearMonth":
+        """The month `count` months back: 2026-01, 3 -> 2025-10.
+
+        May land before FIRST_MONTH (even in year 0 or below); the
+        caller checks the range before using the result.
+        """
+        index = self.year * 12 + (self.month - 1) - count
+        return YearMonth(index // 12, index % 12 + 1)
+
     def first_day(self) -> datetime.date:
         return datetime.date(self.year, self.month, 1)
 
@@ -123,6 +134,7 @@ class ReportRequest:
 
     month: YearMonth
     compare_to: YearMonth
+    average_of: int | None = None  # months to average, if asked
 
 
 @dataclass(frozen=True)
@@ -155,6 +167,19 @@ class Comparison:
 
 
 @dataclass(frozen=True)
+class AverageComparison:
+    """The average of the months before the report month."""
+
+    months: int  # how many months were averaged
+    first_month: YearMonth
+    last_month: YearMonth  # the month before the report month
+    total: Decimal  # window total / months, half-up to cents
+    difference: Decimal  # report month total minus `total`
+    # `total` of each item is that category's rounded average.
+    categories: tuple[CategoryDifference, ...]  # by category name
+
+
+@dataclass(frozen=True)
 class MonthlyReport:
     """Aggregates of one month and its comparison."""
 
@@ -163,6 +188,7 @@ class MonthlyReport:
     count: int
     categories: tuple[CategoryShare, ...]  # total desc, then name
     comparison: Comparison
+    average: AverageComparison | None = None
 
 
 class ExpenseValidationError(ValueError):

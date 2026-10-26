@@ -1,5 +1,5 @@
 ---
-status: planned
+status: implemented
 ---
 
 # Average month comparison

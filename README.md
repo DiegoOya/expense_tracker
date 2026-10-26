@@ -29,10 +29,7 @@ fine-grained token; without it, it simply does not connect.
 | --- | --- | --- |
 | `add_expense(amount, description, date?, category?)` | [add-expense](specs/add-expense/spec.md) | Records one expense in EUR. Amount as text or number (`"12.50"`, `"12,50"`, `19.99`); date defaults to today and cannot be in the future; category is suggested by the categorizer when omitted. Returns the stored expense; invalid input returns a tool error with the exact reason. |
 | `list_expenses(date_from?, date_to?, category?, limit?)` | [list-expenses](specs/list-expenses/spec.md) | Lists stored expenses, most recent first, with optional inclusive date range and category filters. `limit` is 50 by default and 200 at most; `total_count` says how many expenses matched before the limit. Invalid input returns a tool error with the exact reason. |
-| `monthly_report(month?, compare_to?)` | [monthly-report](specs/monthly-report/spec.md) | Summarises one month (default: the current one): total, number of expenses, and total, count and percentage per category. Compares it with another month (default: the previous one), overall and per category, with signed differences (`"+28.60"`, `"-730.80"`). Months from 1900-01; invalid input returns a tool error with the exact reason. |
-
-Next: comparing a month with the average of the last X months, as a
-second iteration of the monthly-report spec.
+| `monthly_report(month?, compare_to?, average_of?)` | [monthly-report](specs/monthly-report/spec.md), [avg-month-comparison](specs/avg-month-comparison/spec.md) | Summarises one month (default: the current one): total, number of expenses, and total, count and percentage per category. Compares it with another month (default: the previous one), overall and per category, with signed differences (`"+28.60"`, `"-730.80"`). With `average_of` (2 to 12) it also compares the month with the average of that many months right before it (empty months count as 0, averages rounded half-up to cents), overall and per category. Months from 1900-01; invalid input returns a tool error with the exact reason. |
 
 ## Optional: categorize with Claude
 
@@ -360,6 +357,22 @@ why, and what changed.
     up front which diagnostic detail is safe to log (here, the API's
     error type and message), instead of discovering the gap during a
     live check.
+27. **A number written from memory was wrong, again.** The commit
+    message of the avg-month-comparison tests said "40 new tests";
+    there were 29 (the suite went from 315 to 344). The agent caught
+    it reading the message back and amended the local commit before
+    the push. It is the same mistake as the commit count of an
+    earlier session: a figure that is easy to compute was typed from
+    memory. Lesson: take counts from a command's output (here the
+    pytest totals), not from the draft of the message.
+28. **The SDK ignores unknown tool arguments.** Before the feature
+    existed, `monthly_report` called with `average_of: null` (or with
+    any value) succeeded and simply left the argument out, so the
+    "unchanged output" tests (AC-AVG-02) already passed in the red
+    step, and a misspelled argument from a client would be dropped
+    without an error. The tests still do their job (they guard the
+    v1 output), but the red step cannot prove that case. Lesson: in
+    the red step, check which new tests pass already and say why.
 
 ### Manual hook verification (phase 2)
 
