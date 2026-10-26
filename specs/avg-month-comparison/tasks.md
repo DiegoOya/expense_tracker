@@ -41,7 +41,16 @@ Each task is one commit-sized step. Tick when done.
 - [x] T11. Spec `status: implemented`; README tool row and "Next"
   line; README lessons if anything went wrong. Commit
   `feat(avg-month-comparison)` after the developer accepts.
-- [ ] T12. Manual check: `monthly_report` with `average_of` called
+- [x] T12. Manual check: `monthly_report` with `average_of` called
   from Claude Code via the project's `.mcp.json` server.
+  Done 2026-10-26 on the local (git-ignored) database. With only
+  October stored, `average_of` 3 gave an empty window (average
+  "0.00", differences equal to the month's totals). After adding nine
+  fictitious expenses from July to September with explicit
+  categories, the average was "65.15" (195.45 / 3), difference
+  "+92.55", food "19.17" / "-14.67", transport "15.17" / "+108.63",
+  leisure "10.00" / "+14.90", utilities "20.82" / "-20.82", other
+  "0.00" / "+4.50"; the category averages add up to 65.16, not
+  65.15, as the spec says. All values match a hand calculation.
 
 Coverage check: every AC-AVG-01 to 13 appears in at least one task.
